@@ -30,7 +30,12 @@ export async function build(path: string) {
 
 async function buildPr(path: string) {
   Core.debug(`Building bundle…`);
+  Core.debug(`PATH: ${path}`);
+  await execAsync(`cd ${path}`);
+  Core.debug(`2`);
   await execAsync(`cd ${path} && yarn`);
+  Core.debug(`3`);
   await execAsync(`cd ${path} && NODE_ENV=production yarn build`);
-  return getPackageStats('.');
+  Core.debug(`4`);
+  return getPackageStats(path);
 }
