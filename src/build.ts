@@ -16,8 +16,7 @@ export async function build() {
   Core.debug(JSON.stringify(prOutput, null, 2));
   Core.endGroup();
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const file = JSON.stringify(await readFile('./package.json', 'utf-8'));
+  const file = JSON.parse(await readFile('./package.json', 'utf-8')) as { readonly name: string };
   const baseOutput = await getPackageStats(file.name);
   Core.startGroup('baseOutput');
   Core.debug(JSON.stringify(baseOutput, null, 2));
