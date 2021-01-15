@@ -19,6 +19,7 @@ export async function build(path: string) {
   const file = JSON.parse(await readFile(path + '/package.json', 'utf-8')) as {
     readonly name: string;
   };
+  Core.debug(JSON.stringify(file));
   const baseOutput = await getPackageStats(file.name);
   Core.startGroup('baseOutput');
   Core.debug(JSON.stringify(baseOutput, null, 2));
