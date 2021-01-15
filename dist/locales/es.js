@@ -18158,7 +18158,7 @@ function fixtmpdir (cache) {
 
 const path = __webpack_require__(5622)
 const y18n = __webpack_require__(8138)({
-  directory: __webpack_require__.ab + "locales2",
+  directory: __webpack_require__.ab + "locales4",
   locale: 'en',
   updateFiles: process.env.CACACHE_UPDATE_LOCALE_FILES === 'true'
 })
