@@ -8,12 +8,12 @@ export async function build(path: string) {
   const prCommit = process.env.GITHUB_HEAD_REF!;
   const baseCommit = process.env.GITHUB_BASE_REF!;
 
-  const prOutput = (await readCache({ commit: prCommit })) ?? (await buildPr());
+  const prOutput = (await readCache({ commit: prCommit })) ?? (await buildPr(path));
   Core.startGroup('prOutput');
   Core.debug(JSON.stringify(prOutput, null, 2));
   Core.endGroup();
 
-  const file = require(path) as { readonly name: string };
+  const file = require(path + '/package.json') as { readonly name: string };
   const baseOutput = await getPackageStats(file.name);
   Core.startGroup('baseOutput');
   Core.debug(JSON.stringify(baseOutput, null, 2));
@@ -22,9 +22,9 @@ export async function build(path: string) {
   return { prOutput, baseOutput, prCommit, baseCommit };
 }
 
-async function buildPr() {
+async function buildPr(path: string) {
   Core.debug(`Building bundle…`);
-  await execAsync(`yarn`);
-  await execAsync(`NODE_ENV=production yarn build`);
+  await execAsync(`cd ${path} && yarn`);
+  await execAsync(`cd ${path} && NODE_ENV=production yarn build`);
   return getPackageStats('.');
 }
