@@ -1,12 +1,5 @@
-name: 'Type of Web Next.js Stats'
+name: 'Type of Web Bundlephobia PR stats'
 description: 'Compare bundle size for Pull Requests'
-inputs:
-  pr_directory_name:
-    description: 'Directory against which the build will be based'
-    required: true
-  base_directory_name:
-    description: 'Base directory branch'
-    required: true
 
 runs:
   using: 'node12'
