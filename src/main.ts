@@ -19,7 +19,7 @@ async function run() {
 
   Core.startGroup('build');
 
-  const { prOutput, baseOutput, prCommit, baseCommit } = await build();
+  const { prOutput, baseOutput, prCommit, baseCommit } = await build(Core.getInput('path'));
 
   await saveCache({
     content: prOutput,
