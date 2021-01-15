@@ -1,0 +1,10 @@
+name: 'Type of Web Bundlephobia PR stats'
+description: 'Compare bundle size for Pull Requests'
+
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
+
+branding:
+  color: green
+  icon: 'bar-chart-2'
