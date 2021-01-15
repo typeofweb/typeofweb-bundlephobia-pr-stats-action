@@ -1,4 +1,5 @@
-import { readFile, writeFile, unlink } from 'fs/promises';
+import { promises as fsp } from 'fs';
+const { readFile, writeFile, unlink } = fsp;
 
 import * as Cache from '@actions/cache';
 import * as Core from '@actions/core';
