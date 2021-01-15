@@ -1,5 +1,9 @@
 name: 'Type of Web Bundlephobia PR stats'
 description: 'Compare bundle size for Pull Requests'
+inputs:
+  path:
+    description: 'Directory against which the build will be compared'
+    required: true
 
 runs:
   using: 'node12'

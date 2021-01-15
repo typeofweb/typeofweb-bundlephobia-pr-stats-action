@@ -1,13 +1,10 @@
-import { promises as fsp } from 'fs';
-
 import * as Core from '@actions/core';
 import { getPackageStats } from 'package-build-stats';
-const { readFile } = fsp;
 
 import { readCache } from './octokit';
 import { execAsync } from './utils';
 
-export async function build() {
+export async function build(path: string) {
   const prCommit = process.env.GITHUB_HEAD_REF!;
   const baseCommit = process.env.GITHUB_BASE_REF!;
 
@@ -16,9 +13,7 @@ export async function build() {
   Core.debug(JSON.stringify(prOutput, null, 2));
   Core.endGroup();
 
-  await execAsync('ls -al');
-
-  const file = JSON.parse(await readFile('./package.json', 'utf-8')) as { readonly name: string };
+  const file = require(path) as { readonly name: string };
   const baseOutput = await getPackageStats(file.name);
   Core.startGroup('baseOutput');
   Core.debug(JSON.stringify(baseOutput, null, 2));
