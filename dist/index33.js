@@ -1,56 +1,87 @@
-'use strict'
+/*global window, global*/
+var util = require("util")
+var assert = require("assert")
+function now() { return new Date().getTime() }
 
-let $module
+var slice = Array.prototype.slice
+var console
+var times = {}
 
-/*
-  let contextProto = this.context;
-  while (contextProto = Object.getPrototypeOf(contextProto)) {
-    completionGroups.push(Object.getOwnPropertyNames(contextProto));
-  }
-*/
-
-
-function handle (data) {
-  let idx      = data.idx
-    , child    = data.child
-    , method   = data.method
-    , args     = data.args
-    , callback = function () {
-        let _args = Array.prototype.slice.call(arguments)
-        if (_args[0] instanceof Error) {
-          let e = _args[0]
-          _args[0] = {
-              '$error'  : '$error'
-            , 'type'    : e.constructor.name
-            , 'message' : e.message
-            , 'stack'   : e.stack
-          }
-          Object.keys(e).forEach(function(key) {
-            _args[0][key] = e[key]
-          })
-        }
-        process.send({ owner: 'farm', idx: idx, child: child, args: _args })
-      }
-    , exec
-
-  if (method == null && typeof $module == 'function')
-    exec = $module
-  else if (typeof $module[method] == 'function')
-    exec = $module[method]
-
-  if (!exec)
-    return console.error('NO SUCH METHOD:', method)
-
-  exec.apply(null, args.concat([ callback ]))
+if (typeof global !== "undefined" && global.console) {
+    console = global.console
+} else if (typeof window !== "undefined" && window.console) {
+    console = window.console
+} else {
+    console = {}
 }
 
+var functions = [
+    [log, "log"],
+    [info, "info"],
+    [warn, "warn"],
+    [error, "error"],
+    [time, "time"],
+    [timeEnd, "timeEnd"],
+    [trace, "trace"],
+    [dir, "dir"],
+    [consoleAssert, "assert"]
+]
 
-process.on('message', function (data) {
-  if (data.owner !== 'farm') {
-    return;
-  }
+for (var i = 0; i < functions.length; i++) {
+    var tuple = functions[i]
+    var f = tuple[0]
+    var name = tuple[1]
 
-  if (!$module) return $module = require(data.module)
-  if (data.event == 'die') return process.exit(0)
-  handle(data)
-})
+    if (!console[name]) {
+        console[name] = f
+    }
+}
+
+module.exports = console
+
+function log() {}
+
+function info() {
+    console.log.apply(console, arguments)
+}
+
+function warn() {
+    console.log.apply(console, arguments)
+}
+
+function error() {
+    console.warn.apply(console, arguments)
+}
+
+function time(label) {
+    times[label] = now()
+}
+
+function timeEnd(label) {
+    var time = times[label]
+    if (!time) {
+        throw new Error("No such label: " + label)
+    }
+
+    delete times[label]
+    var duration = now() - time
+    console.log(label + ": " + duration + "ms")
+}
+
+function trace() {
+    var err = new Error()
+    err.name = "Trace"
+    err.message = util.format.apply(null, arguments)
+    console.error(err.stack)
+}
+
+function dir(object) {
+    console.log(util.inspect(object) + "\n")
+}
+
+function consoleAssert(expression) {
+    if (!expression) {
+        var arr = slice.call(arguments, 1)
+        assert.ok(false, util.format.apply(null, arr))
+    }
+}

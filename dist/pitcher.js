@@ -4761,7 +4761,7 @@ module.exports = urlToRequest;
 const qs = __webpack_require__(191)
 const loaderUtils = __webpack_require__(432)
 const hash = __webpack_require__(869)
-const selfPath = __webpack_require__.ab + "index32.js"
+const selfPath = __webpack_require__.ab + "index45.js"
 const templateLoaderPath = __webpack_require__.ab + "templateLoader.js"
 const stylePostLoaderPath = __webpack_require__.ab + "stylePostLoader.js"
 
@@ -4790,7 +4790,7 @@ const dedupeESLintLoader = loaders => {
 const shouldIgnoreCustomBlock = loaders => {
   const actualLoaders = loaders.filter(loader => {
     // vue-loader
-    if (loader.path === __webpack_require__.ab + "index32.js") {
+    if (loader.path === __webpack_require__.ab + "index45.js") {
       return false
     }
 

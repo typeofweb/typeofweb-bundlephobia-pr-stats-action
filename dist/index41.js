@@ -1,4 +1,11 @@
-'use strict';
+exports.isatty = function () { return false; };
 
-exports.decode = exports.parse = require('./decode');
-exports.encode = exports.stringify = require('./encode');
+function ReadStream() {
+  throw new Error('tty.ReadStream is not implemented');
+}
+exports.ReadStream = ReadStream;
+
+function WriteStream() {
+  throw new Error('tty.ReadStream is not implemented');
+}
+exports.WriteStream = WriteStream;

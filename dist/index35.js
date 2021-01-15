@@ -1,87 +1,70 @@
-/*global window, global*/
-var util = require("util")
-var assert = require("assert")
-function now() { return new Date().getTime() }
+// This file should be ES5 compatible
+/* eslint prefer-spread:0, no-var:0, prefer-reflect:0, no-magic-numbers:0 */
+'use strict'
 
-var slice = Array.prototype.slice
-var console
-var times = {}
+module.exports = (function () {
+	// Import Events
+	var events = require('events')
 
-if (typeof global !== "undefined" && global.console) {
-    console = global.console
-} else if (typeof window !== "undefined" && window.console) {
-    console = window.console
-} else {
-    console = {}
-}
+	// Export Domain
+	var domain = {}
+	domain.createDomain = domain.create = function () {
+		var d = new events.EventEmitter()
 
-var functions = [
-    [log, "log"],
-    [info, "info"],
-    [warn, "warn"],
-    [error, "error"],
-    [time, "time"],
-    [timeEnd, "timeEnd"],
-    [trace, "trace"],
-    [dir, "dir"],
-    [consoleAssert, "assert"]
-]
+		function emitError (e) {
+			d.emit('error', e)
+		}
 
-for (var i = 0; i < functions.length; i++) {
-    var tuple = functions[i]
-    var f = tuple[0]
-    var name = tuple[1]
-
-    if (!console[name]) {
-        console[name] = f
-    }
-}
-
-module.exports = console
-
-function log() {}
-
-function info() {
-    console.log.apply(console, arguments)
-}
-
-function warn() {
-    console.log.apply(console, arguments)
-}
-
-function error() {
-    console.warn.apply(console, arguments)
-}
-
-function time(label) {
-    times[label] = now()
-}
-
-function timeEnd(label) {
-    var time = times[label]
-    if (!time) {
-        throw new Error("No such label: " + label)
-    }
-
-    delete times[label]
-    var duration = now() - time
-    console.log(label + ": " + duration + "ms")
-}
-
-function trace() {
-    var err = new Error()
-    err.name = "Trace"
-    err.message = util.format.apply(null, arguments)
-    console.error(err.stack)
-}
-
-function dir(object) {
-    console.log(util.inspect(object) + "\n")
-}
-
-function consoleAssert(expression) {
-    if (!expression) {
-        var arr = slice.call(arguments, 1)
-        assert.ok(false, util.format.apply(null, arr))
-    }
-}
+		d.add = function (emitter) {
+			emitter.on('error', emitError)
+		}
+		d.remove = function (emitter) {
+			emitter.removeListener('error', emitError)
+		}
+		d.bind = function (fn) {
+			return function () {
+				var args = Array.prototype.slice.call(arguments)
+				try {
+					fn.apply(null, args)
+				}
+				catch (err) {
+					emitError(err)
+				}
+			}
+		}
+		d.intercept = function (fn) {
+			return function (err) {
+				if ( err ) {
+					emitError(err)
+				}
+				else {
+					var args = Array.prototype.slice.call(arguments, 1)
+					try {
+						fn.apply(null, args)
+					}
+					catch (err) {
+						emitError(err)
+					}
+				}
+			}
+		}
+		d.run = function (fn) {
+			try {
+				fn()
+			}
+			catch (err) {
+				emitError(err)
+			}
+			return this
+		}
+		d.dispose = function () {
+			this.removeAllListeners()
+			return this
+		}
+		d.enter = d.exit = function () {
+			return this
+		}
+		return d
+	}
+	return domain
+}).call(this)
