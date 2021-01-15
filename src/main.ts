@@ -86,4 +86,7 @@ async function run() {
   Core.endGroup();
 }
 
-run().catch((err) => Core.setFailed(err));
+run().catch((err) => {
+  console.error(err);
+  Core.setFailed(err);
+});
