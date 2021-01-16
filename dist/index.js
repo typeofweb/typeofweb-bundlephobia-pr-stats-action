@@ -58338,12 +58338,11 @@ async function run() {
     const baseOutputByBundle = Object.fromEntries(baseOutput);
     const rows = bundles.map((bundle) => [
         bundle,
-        prOutputByBundle[bundle] ? formatSizes(prOutputByBundle[bundle]) : '-',
-        baseOutputByBundle[bundle] ? formatSizes(baseOutputByBundle[bundle]) : '-',
+        prOutputByBundle[bundle]
+            ? formatSizes(prOutputByBundle[bundle], baseOutputByBundle[bundle])
+            : '-',
     ]);
-    const body = size_formatter_1.HEADER +
-        '\n\n' +
-        utils_1.generateMDTable([{ label: '' }, { label: prDirectory }, { label: baseDirectory }], rows);
+    const body = size_formatter_1.HEADER + '\n\n' + utils_1.generateMDTable([{ label: '' }, { label: 'size comparison' }], rows);
     if (existingComment) {
         await octokit.issues.updateComment({
             ...github_1.context.repo,
@@ -58370,13 +58369,10 @@ function formatSizeChange(is, was) {
     }
     return utils_1.formatDiff(is - was, (is - was) / was);
 }
-function formatSizes({ size, gzipSize, previousSize, previousGzipSize, }) {
-    const sizeStr = `* uncompressed: ${pretty_bytes_1.default(size)} ${formatSizeChange(size, previousSize)}`;
-    const gzipStr = `* gzipped: ${pretty_bytes_1.default(gzipSize)} ${formatSizeChange(gzipSize, previousGzipSize)}`;
-    return `
-${sizeStr}
-${gzipStr}
-`;
+function formatSizes({ size, gzipSize, }, previous) {
+    const sizeStr = `uncompressed: ${pretty_bytes_1.default(size)} ${formatSizeChange(size, previous === null || previous === void 0 ? void 0 : previous.size)}`;
+    const gzipStr = `gzipped: ${pretty_bytes_1.default(gzipSize)} ${formatSizeChange(gzipSize, previous === null || previous === void 0 ? void 0 : previous.gzipSize)}`;
+    return `${sizeStr}, ${gzipStr}`;
 }
 
 
