@@ -58370,9 +58370,9 @@ function formatSizeChange(is, was) {
     return utils_1.formatDiff(is - was, (is - was) / was);
 }
 function formatSizes({ size, gzipSize, }, previous) {
-    const sizeStr = `uncompressed: ${pretty_bytes_1.default(size)} ${formatSizeChange(size, previous === null || previous === void 0 ? void 0 : previous.size)}`;
-    const gzipStr = `gzipped: ${pretty_bytes_1.default(gzipSize)} ${formatSizeChange(gzipSize, previous === null || previous === void 0 ? void 0 : previous.gzipSize)}`;
-    return `${sizeStr}, ${gzipStr}`;
+    const sizeStr = `<tr><td>uncompressed</td> <td>${pretty_bytes_1.default(size)} ${formatSizeChange(size, previous === null || previous === void 0 ? void 0 : previous.size)}</td></tr>`;
+    const gzipStr = `<tr><td>gzipped</td> <td>${pretty_bytes_1.default(gzipSize)} ${formatSizeChange(gzipSize, previous === null || previous === void 0 ? void 0 : previous.gzipSize)}</td></tr>`;
+    return `<table>${sizeStr} ${gzipStr}</table>`;
 }
 
 

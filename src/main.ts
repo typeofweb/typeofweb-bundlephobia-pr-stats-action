@@ -129,10 +129,13 @@ function formatSizes(
     readonly gzipSize?: number;
   },
 ): string {
-  const sizeStr = `uncompressed: ${prettyBytes(size)} ${formatSizeChange(size, previous?.size)}`;
-  const gzipStr = `gzipped: ${prettyBytes(gzipSize)} ${formatSizeChange(
+  const sizeStr = `<tr><td>uncompressed</td> <td>${prettyBytes(size)} ${formatSizeChange(
+    size,
+    previous?.size,
+  )}</td></tr>`;
+  const gzipStr = `<tr><td>gzipped</td> <td>${prettyBytes(gzipSize)} ${formatSizeChange(
     gzipSize,
     previous?.gzipSize,
-  )}`;
-  return `${sizeStr}, ${gzipStr}`;
+  )}</td></tr>`;
+  return `<table>${sizeStr} ${gzipStr}</table>`;
 }
