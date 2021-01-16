@@ -58241,11 +58241,11 @@ async function build(prDirectory, baseDirectory) {
     core_1.debug(`pwd: ${await utils_1.execAsync(`pwd`)}`);
     const prCommit = await utils_1.execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
     const baseCommit = await utils_1.execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
-    const prOutput = (_a = (await octokit_1.readCache({ commit: prCommit }))) !== null && _a !== void 0 ? _a : (await buildBundle(cwd + prDirectory));
+    const prOutput = (_a = (await octokit_1.readCache({ commit: prCommit }))) !== null && _a !== void 0 ? _a : (await buildBundle(path_1.join(cwd, prDirectory)));
     core_1.startGroup('prOutput');
     core_1.debug(JSON.stringify(prOutput, null, 2));
     core_1.endGroup();
-    const baseOutput = (_b = (await octokit_1.readCache({ commit: baseCommit }))) !== null && _b !== void 0 ? _b : (await buildBundle(cwd + baseDirectory));
+    const baseOutput = (_b = (await octokit_1.readCache({ commit: baseCommit }))) !== null && _b !== void 0 ? _b : (await buildBundle(path_1.join(cwd, baseDirectory)));
     core_1.startGroup('prOutput');
     core_1.debug(JSON.stringify(baseOutput, null, 2));
     core_1.endGroup();

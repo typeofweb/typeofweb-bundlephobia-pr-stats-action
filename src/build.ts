@@ -22,14 +22,14 @@ export async function build(prDirectory: string, baseDirectory: string) {
 
   const prOutput =
     ((await readCache({ commit: prCommit })) as Bundle | undefined) ??
-    (await buildBundle(cwd + prDirectory));
+    (await buildBundle(join(cwd, prDirectory)));
   startGroup('prOutput');
   debug(JSON.stringify(prOutput, null, 2));
   endGroup();
 
   const baseOutput =
     ((await readCache({ commit: baseCommit })) as Bundle | undefined) ??
-    (await buildBundle(cwd + baseDirectory));
+    (await buildBundle(join(cwd, baseDirectory)));
   startGroup('prOutput');
   debug(JSON.stringify(baseOutput, null, 2));
   endGroup();
