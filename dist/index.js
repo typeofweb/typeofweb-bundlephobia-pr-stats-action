@@ -58491,7 +58491,7 @@ function uniqKeys(obj1, obj2) {
     ]);
 }
 exports.uniqKeys = uniqKeys;
-function addPercent(change, goodEmoji = '', badEmoji = ':small_red_triangle:') {
+function addPercent(change, goodEmoji = '▼', badEmoji = ':small_red_triangle:') {
     const formatted = (change * 100).toFixed(2);
     if (/^-|^0(?:\.0+)$/.test(formatted)) {
         return `${formatted}%${goodEmoji ? ' ' + goodEmoji : ''}`;
@@ -58503,10 +58503,9 @@ function formatDiff(absoluteChange, relativeChange) {
     if (absoluteChange === 0) {
         return '--';
     }
-    const trendIcon = absoluteChange < 0 ? '▼' : '▲';
-    return `${trendIcon} ${pretty_bytes_1.default(absoluteChange, {
+    return ` ▶️ ${pretty_bytes_1.default(absoluteChange, {
         signed: true,
-    })} (${addPercent(relativeChange, '')})`;
+    })} (${addPercent(relativeChange)})`;
 }
 exports.formatDiff = formatDiff;
 function generateMDTable(headers, body) {

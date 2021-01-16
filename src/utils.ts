@@ -30,7 +30,7 @@ export function uniqKeys<R extends object, U extends object>(
   ]);
 }
 
-export function addPercent(change: number, goodEmoji = '', badEmoji = ':small_red_triangle:') {
+export function addPercent(change: number, goodEmoji = '▼', badEmoji = ':small_red_triangle:') {
   const formatted = (change * 100).toFixed(2);
   if (/^-|^0(?:\.0+)$/.test(formatted)) {
     return `${formatted}%${goodEmoji ? ' ' + goodEmoji : ''}`;
@@ -43,11 +43,9 @@ export function formatDiff(absoluteChange: number, relativeChange: number) {
     return '--';
   }
 
-  const trendIcon = absoluteChange < 0 ? '▼' : '▲';
-
-  return `${trendIcon} ${PrettyBytes(absoluteChange, {
+  return ` ▶️ ${PrettyBytes(absoluteChange, {
     signed: true,
-  })} (${addPercent(relativeChange, '')})`;
+  })} (${addPercent(relativeChange)})`;
 }
 
 type TupleOf<
