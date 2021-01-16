@@ -58276,15 +58276,21 @@ async function buildBundle(basePath) {
 /***/ }),
 
 /***/ 399:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
+const pretty_bytes_1 = __importDefault(__nccwpck_require__(5168));
 const build_1 = __nccwpck_require__(6793);
 const octokit_1 = __nccwpck_require__(6161);
+const size_formatter_1 = __nccwpck_require__(3713);
+const utils_1 = __nccwpck_require__(1314);
 async function run() {
     var _a, _b, _c, _d;
     core_1.debug(JSON.stringify({
@@ -58325,10 +58331,19 @@ async function run() {
     }
     const existingComment = await octokit_1.findExistingComment(octokit, github_1.context, prNumber);
     core_1.debug(JSON.stringify({ existingComment }));
-    const body = JSON.stringify({
-        prOutput,
-        baseOutput,
-    }, null, 2);
+    const bundles = utils_1.uniq([...prOutput.map(([key]) => key), ...baseOutput.map(([key]) => key)])
+        .slice()
+        .sort();
+    const prOutputByBundle = Object.fromEntries(prOutput);
+    const baseOutputByBundle = Object.fromEntries(baseOutput);
+    const rows = bundles.map((bundle) => [
+        bundle,
+        prOutputByBundle[bundle] ? formatSizes(prOutputByBundle[bundle]) : '-',
+        baseOutputByBundle[bundle] ? formatSizes(baseOutputByBundle[bundle]) : '-',
+    ]);
+    const body = size_formatter_1.HEADER +
+        '\n\n' +
+        utils_1.generateMDTable([{ label: '' }, { label: prDirectory }, { label: baseDirectory }], rows);
     if (existingComment) {
         await octokit.issues.updateComment({
             ...github_1.context.repo,
@@ -58349,6 +58364,20 @@ run().catch((err) => {
     console.error(err);
     core_1.setFailed(err);
 });
+function formatSizeChange(is, was) {
+    if (!is || !was) {
+        return '';
+    }
+    return utils_1.formatDiff(is - was, (is - was) / was);
+}
+function formatSizes({ size, gzipSize, previousSize, previousGzipSize, }) {
+    const sizeStr = `* uncompressed: ${pretty_bytes_1.default(size)} ${formatSizeChange(size, previousSize)}`;
+    const gzipStr = `* gzipped: ${pretty_bytes_1.default(gzipSize)} ${formatSizeChange(gzipSize, previousGzipSize)}`;
+    return `
+${sizeStr}
+${gzipStr}
+`;
+}
 
 
 /***/ }),
@@ -58438,7 +58467,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateMDTable = exports.formatDiff = exports.addPercent = exports.prettyBytesInverse = exports.uniqKeys = exports.uniq = exports.execAsync = exports.ZERO_WIDTH_SPACE = void 0;
+exports.generateMDTable = exports.formatDiff = exports.addPercent = exports.uniqKeys = exports.uniq = exports.execAsync = exports.ZERO_WIDTH_SPACE = void 0;
 const child_process_1 = __nccwpck_require__(3129);
 const pretty_bytes_1 = __importDefault(__nccwpck_require__(5168));
 exports.ZERO_WIDTH_SPACE = '&#xfeff;';
@@ -58466,17 +58495,6 @@ function uniqKeys(obj1, obj2) {
     ]);
 }
 exports.uniqKeys = uniqKeys;
-function prettyBytesInverse(n, unit) {
-    const metricPrefix = unit.length < 2 ? '' : unit[0];
-    const metricPrefixes = ['', 'k', 'M', 'G', 'T', 'P'];
-    const metricPrefixIndex = metricPrefixes.indexOf(metricPrefix);
-    if (metricPrefixIndex === -1) {
-        throw new TypeError(`unrecognized metric prefix '${metricPrefix}' in unit '${unit}'. only '${metricPrefixes.join("', '")}' are allowed`);
-    }
-    const power = metricPrefixIndex * 3;
-    return Number(n) * 10 ** power;
-}
-exports.prettyBytesInverse = prettyBytesInverse;
 function addPercent(change, goodEmoji = '', badEmoji = ':small_red_triangle:') {
     const formatted = (change * 100).toFixed(2);
     if (/^-|^0(?:\.0+)$/.test(formatted)) {
@@ -58492,7 +58510,7 @@ function formatDiff(absoluteChange, relativeChange) {
     const trendIcon = absoluteChange < 0 ? '▼' : '▲';
     return `${trendIcon} ${pretty_bytes_1.default(absoluteChange, {
         signed: true,
-    })} (${addPercent(relativeChange, '', '')})`;
+    })} (${addPercent(relativeChange, '')})`;
 }
 exports.formatDiff = formatDiff;
 function generateMDTable(headers, body) {
