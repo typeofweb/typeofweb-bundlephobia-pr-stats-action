@@ -58391,7 +58391,7 @@ const cache_1 = __nccwpck_require__(7799);
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const size_formatter_1 = __nccwpck_require__(3713);
-const CACHE_KEY_PREFIX = 'typeofweb-bundlephobia-pr-stats-action-';
+const CACHE_KEY_PREFIX = 'typeofweb-bundle-pr-stats-action-';
 function getOctokit() {
     if (!process.env.GITHUB_TOKEN) {
         return null;

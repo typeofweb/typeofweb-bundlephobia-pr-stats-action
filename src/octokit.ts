@@ -13,7 +13,7 @@ import { getOctokit as githubGetOctokit } from '@actions/github';
 
 import { HEADER } from './size-formatter';
 
-const CACHE_KEY_PREFIX = 'typeofweb-bundlephobia-pr-stats-action-';
+const CACHE_KEY_PREFIX = 'typeofweb-bundle-pr-stats-action-';
 
 export function getOctokit() {
   if (!process.env.GITHUB_TOKEN) {
