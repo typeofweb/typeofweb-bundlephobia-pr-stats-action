@@ -1,41 +1,67 @@
+/* eslint-disable @typescript-eslint/consistent-type-imports */
 import { promises as fsp } from 'fs';
+import { join } from 'path';
+const { stat } = fsp;
 
 import * as Core from '@actions/core';
-import { getPackageStats } from 'package-build-stats';
-const { readFile } = fsp;
+import gzipSize from 'gzip-size';
 
 import { readCache } from './octokit';
 import { execAsync } from './utils';
 
-export async function build(path: string) {
-  const prCommit = process.env.GITHUB_HEAD_REF!;
-  const baseCommit = process.env.GITHUB_BASE_REF!;
+export async function build(prDirectory: string, baseDirectory: string) {
+  const prCommit = await execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
+  const baseCommit = await execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
 
-  const prOutput = (await readCache({ commit: prCommit })) ?? (await buildPr(path));
+  const prOutput =
+    ((await readCache({ commit: prCommit })) as Bundle | undefined) ??
+    (await buildBundle(prDirectory));
   Core.startGroup('prOutput');
   Core.debug(JSON.stringify(prOutput, null, 2));
   Core.endGroup();
 
-  const file = JSON.parse(await readFile(path + '/package.json', 'utf-8')) as {
-    readonly name: string;
-  };
-  Core.debug(JSON.stringify(file));
-  const baseOutput = await getPackageStats(file.name);
-  Core.startGroup('baseOutput');
+  const baseOutput =
+    ((await readCache({ commit: baseCommit })) as Bundle | undefined) ??
+    (await buildBundle(baseDirectory));
+  Core.startGroup('prOutput');
   Core.debug(JSON.stringify(baseOutput, null, 2));
   Core.endGroup();
 
   return { prOutput, baseOutput, prCommit, baseCommit };
 }
 
-async function buildPr(path: string) {
-  Core.debug(`Building bundle…`);
-  Core.debug(`PATH: ${path}`);
-  await execAsync(`cd ${path}`);
-  Core.debug(`2`);
-  await execAsync(`cd ${path} && yarn`);
-  Core.debug(`3`);
-  await execAsync(`cd ${path} && NODE_ENV=production yarn build`);
-  Core.debug(`4`);
-  return getPackageStats(path);
+type Bundle = ReturnType<typeof buildBundle> extends Promise<infer R> ? R : never;
+
+async function buildBundle(basePath: string) {
+  Core.debug(`Building Next.js for ${basePath}`);
+  await execAsync(`cd ${basePath} && yarn`);
+  await execAsync(`cd ${basePath} && NODE_ENV=production yarn build`);
+
+  const { main, module, browser, unpkg } = require(join(basePath, 'package.json')) as {
+    readonly main?: string;
+    readonly module?: string;
+    readonly browser?: string;
+    readonly unpkg?: string;
+  };
+  const bundles = { main, module, browser, unpkg };
+
+  const uniqueBundles = Object.entries({ main, module, browser, unpkg }).filter(
+    ([_key, path], index, arr) =>
+      path && arr.findIndex(([_key2, path2]) => path2 === path) === index,
+  ) as readonly (readonly [keyof typeof bundles, string])[];
+
+  const bundleToSize = await Promise.all(
+    uniqueBundles.map(async ([bundle, path]) => {
+      const filePath = join(basePath, path);
+      return [
+        bundle,
+        {
+          size: (await stat(filePath)).size,
+          gzipSize: await gzipSize(filePath),
+        },
+      ] as const;
+    }),
+  );
+
+  return bundleToSize.sort(([pathA], [pathB]) => pathA.localeCompare(pathB));
 }
