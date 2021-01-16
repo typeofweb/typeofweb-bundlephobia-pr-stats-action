@@ -2,8 +2,6 @@ import { exec } from 'child_process';
 
 import PrettyBytes from 'pretty-bytes';
 
-import type { SizeUnit } from './types';
-
 export const ZERO_WIDTH_SPACE = '&#xfeff;';
 
 export function execAsync(args: string): Promise<string> {
@@ -32,22 +30,6 @@ export function uniqKeys<R extends object, U extends object>(
   ]);
 }
 
-export function prettyBytesInverse(n: string, unit: SizeUnit): number {
-  const metricPrefix = unit.length < 2 ? '' : unit[0]!;
-  const metricPrefixes = ['', 'k', 'M', 'G', 'T', 'P'];
-  const metricPrefixIndex = metricPrefixes.indexOf(metricPrefix);
-  if (metricPrefixIndex === -1) {
-    throw new TypeError(
-      `unrecognized metric prefix '${metricPrefix}' in unit '${unit}'. only '${metricPrefixes.join(
-        "', '",
-      )}' are allowed`,
-    );
-  }
-
-  const power = metricPrefixIndex * 3;
-  return Number(n) * 10 ** power;
-}
-
 export function addPercent(change: number, goodEmoji = '', badEmoji = ':small_red_triangle:') {
   const formatted = (change * 100).toFixed(2);
   if (/^-|^0(?:\.0+)$/.test(formatted)) {
@@ -65,13 +47,22 @@ export function formatDiff(absoluteChange: number, relativeChange: number) {
 
   return `${trendIcon} ${PrettyBytes(absoluteChange, {
     signed: true,
-  })} (${addPercent(relativeChange, '', '')})`;
+  })} (${addPercent(relativeChange, '')})`;
 }
 
-export function generateMDTable(
-  headers: ReadonlyArray<{ readonly label: string; readonly align: 'left' | 'center' | 'right' }>,
-  body: readonly (readonly string[])[],
-): string {
+type TupleOf<
+  T,
+  Length extends number,
+  Acc extends readonly unknown[] = readonly []
+> = number extends Length
+  ? readonly T[]
+  : Acc['length'] extends Length
+  ? Acc
+  : TupleOf<T, Length, readonly [T, ...Acc]>;
+
+export function generateMDTable<
+  H extends readonly { readonly label: string; readonly align?: 'left' | 'center' | 'right' }[]
+>(headers: readonly [...H], body: readonly TupleOf<string, H['length']>[]): string {
   const headerRow = headers.map((header) => header.label || ZERO_WIDTH_SPACE);
   const alignmentRow = headers.map((header) => {
     if (header.align === 'right') {
@@ -83,7 +74,9 @@ export function generateMDTable(
     return ' --- ';
   });
 
-  const bodyRows = body.map((row) => row.map((val) => val || ZERO_WIDTH_SPACE));
+  const bodyRows = (body as readonly (readonly string[])[]).map((row) =>
+    row.map((val) => val || ZERO_WIDTH_SPACE),
+  );
 
   return [headerRow, alignmentRow, ...bodyRows].map((row) => row.join(' | ')).join('\n');
 }
