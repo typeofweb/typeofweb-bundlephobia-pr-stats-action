@@ -58,7 +58,7 @@ export async function readCache({
   commit,
 }: {
   readonly commit: string;
-}): Promise<object | undefined> {
+}): Promise<unknown | undefined> {
   const key = CACHE_KEY_PREFIX + commit;
 
   const foundKey = await Cache.restoreCache([key], key);
@@ -67,5 +67,5 @@ export async function readCache({
   }
   Core.debug(`Found cache key: ${foundKey}`);
   const maybeFile = await readFile(foundKey, 'utf8');
-  return JSON.parse(maybeFile) as object;
+  return JSON.parse(maybeFile) as unknown;
 }

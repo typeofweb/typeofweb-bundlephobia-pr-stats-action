@@ -24,7 +24,7 @@
     "@actions/cache": "1.0.5",
     "@actions/core": "1.2.6",
     "@actions/github": "4.0.0",
-    "package-build-stats": "7.0.2",
+    "gzip-size": "6.0.0",
     "pretty-bytes": "5.5.0"
   },
   "scripts": {

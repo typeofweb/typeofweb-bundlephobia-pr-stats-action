@@ -5,9 +5,6 @@ import { build } from './build';
 import { findExistingComment, getOctokit, saveCache } from './octokit';
 
 async function run() {
-  const path = Core.getInput('path');
-  Core.debug(path);
-
   Core.debug(
     JSON.stringify(
       {
@@ -22,7 +19,10 @@ async function run() {
 
   Core.startGroup('build');
 
-  const { prOutput, baseOutput, prCommit, baseCommit } = await build(path);
+  const prDirectory = Core.getInput('pr_directory_name');
+  const baseDirectory = Core.getInput('base_directory_name');
+
+  const { prOutput, baseOutput, prCommit, baseCommit } = await build(prDirectory, baseDirectory);
 
   await saveCache({
     content: prOutput,
