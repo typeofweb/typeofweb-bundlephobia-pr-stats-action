@@ -66,7 +66,7 @@ async function buildBundle(basePath: string) {
         bundle,
         {
           size: (await stat(filePath)).size,
-          gzipSize: await gzipSize(filePath),
+          gzipSize: await gzipSize(await readFile(filePath)),
         },
       ] as const;
     }),
