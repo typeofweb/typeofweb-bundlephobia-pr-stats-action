@@ -58265,7 +58265,7 @@ async function buildBundle(basePath) {
             bundle,
             {
                 size: (await stat(filePath)).size,
-                gzipSize: await gzip_size_1.default(filePath),
+                gzipSize: await gzip_size_1.default(await readFile(filePath)),
             },
         ];
     }));
@@ -58305,12 +58305,6 @@ async function run() {
         commit: baseCommit,
     });
     core_1.endGroup();
-    core_1.startGroup('calculateSizes');
-    // const [prResult, baseResult] = await Promise.all([
-    //   getNextPagesSize(prOutput),
-    //   getNextPagesSize(baseOutput),
-    // ]);
-    core_1.endGroup();
     core_1.startGroup('postComment');
     // const comparison = generateComparison({
     //   currentResult: prResult,
@@ -58331,18 +58325,22 @@ async function run() {
     }
     const existingComment = await octokit_1.findExistingComment(octokit, github_1.context, prNumber);
     core_1.debug(JSON.stringify({ existingComment }));
+    const body = JSON.stringify({
+        prOutput,
+        baseOutput,
+    }, null, 2);
     if (existingComment) {
         await octokit.issues.updateComment({
             ...github_1.context.repo,
             comment_id: existingComment.id,
-            body: 'siema 2',
+            body,
         });
     }
     else {
         await octokit.issues.createComment({
             ...github_1.context.repo,
             issue_number: prNumber,
-            body: 'siema',
+            body,
         });
     }
     core_1.endGroup();

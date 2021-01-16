@@ -34,13 +34,6 @@ async function run() {
   });
   endGroup();
 
-  startGroup('calculateSizes');
-  // const [prResult, baseResult] = await Promise.all([
-  //   getNextPagesSize(prOutput),
-  //   getNextPagesSize(baseOutput),
-  // ]);
-  endGroup();
-
   startGroup('postComment');
   // const comparison = generateComparison({
   //   currentResult: prResult,
@@ -70,17 +63,26 @@ async function run() {
   const existingComment = await findExistingComment(octokit, context, prNumber);
   debug(JSON.stringify({ existingComment }));
 
+  const body = JSON.stringify(
+    {
+      prOutput,
+      baseOutput,
+    },
+    null,
+    2,
+  );
+
   if (existingComment) {
     await octokit.issues.updateComment({
       ...context.repo,
       comment_id: existingComment.id,
-      body: 'siema 2',
+      body,
     });
   } else {
     await octokit.issues.createComment({
       ...context.repo,
       issue_number: prNumber,
-      body: 'siema',
+      body,
     });
   }
 
