@@ -1,9 +1,15 @@
 import { promises as fsp } from 'fs';
 const { readFile, writeFile, unlink } = fsp;
 
-import * as Cache from '@actions/cache';
-import * as Core from '@actions/core';
-import * as GitHub from '@actions/github';
+import {
+  saveCache as actionsSaveCache,
+  ValidationError,
+  ReserveCacheError,
+  restoreCache,
+} from '@actions/cache';
+import { info, warning, debug } from '@actions/core';
+import type { context } from '@actions/github';
+import { getOctokit as githubGetOctokit } from '@actions/github';
 
 import { HEADER } from './size-formatter';
 
@@ -14,12 +20,12 @@ export function getOctokit() {
     return null;
   }
 
-  return GitHub.getOctokit(process.env.GITHUB_TOKEN);
+  return githubGetOctokit(process.env.GITHUB_TOKEN);
 }
 
 export async function findExistingComment(
-  Octokit: ReturnType<typeof GitHub.getOctokit>,
-  Context: typeof GitHub.context,
+  Octokit: ReturnType<typeof githubGetOctokit>,
+  Context: typeof context,
   prNumber: number,
 ) {
   const { data: comments } = await Octokit.issues.listComments({
@@ -40,18 +46,18 @@ export async function saveCache({
 
   await writeFile(key, JSON.stringify(content), { encoding: 'utf8' });
   try {
-    await Cache.saveCache([key], key, { uploadConcurrency: 1 });
+    await actionsSaveCache([key], key, { uploadConcurrency: 1 });
   } catch (err) {
     const error = err as Error | undefined;
-    if (error?.name === Cache.ValidationError.name) {
+    if (error?.name === ValidationError.name) {
       throw error;
-    } else if (error?.name === Cache.ReserveCacheError.name) {
-      Core.info(error?.message);
+    } else if (error?.name === ReserveCacheError.name) {
+      info(error?.message);
     }
-    Core.warning(error?.message!);
+    warning(error?.message!);
   }
   await unlink(key);
-  Core.debug(`Saved cache key: ${key}`);
+  debug(`Saved cache key: ${key}`);
 }
 
 export async function readCache({
@@ -61,11 +67,11 @@ export async function readCache({
 }): Promise<unknown | undefined> {
   const key = CACHE_KEY_PREFIX + commit;
 
-  const foundKey = await Cache.restoreCache([key], key);
+  const foundKey = await restoreCache([key], key);
   if (!foundKey) {
     return undefined;
   }
-  Core.debug(`Found cache key: ${foundKey}`);
+  debug(`Found cache key: ${foundKey}`);
   const maybeFile = await readFile(foundKey, 'utf8');
   return JSON.parse(maybeFile) as unknown;
 }

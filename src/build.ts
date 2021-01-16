@@ -3,33 +3,36 @@ import { promises as fsp } from 'fs';
 import { join } from 'path';
 const { stat } = fsp;
 
-import * as Core from '@actions/core';
+import { debug, startGroup, endGroup } from '@actions/core';
 import gzipSize from 'gzip-size';
 
 import { readCache } from './octokit';
 import { execAsync } from './utils';
 
+const { readFile } = fsp;
+
 export async function build(prDirectory: string, baseDirectory: string) {
-  Core.debug(`__dirname: ${__dirname}`);
-  Core.debug(`process.cwd(): ${process.cwd()}`);
-  Core.debug(`pwd: ${await execAsync(`pwd`)}`);
+  debug(`__dirname: ${__dirname}`);
+  debug(`process.cwd(): ${process.cwd()}`);
+  const cwd = process.cwd();
+  debug(`pwd: ${await execAsync(`pwd`)}`);
 
   const prCommit = await execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
   const baseCommit = await execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
 
   const prOutput =
     ((await readCache({ commit: prCommit })) as Bundle | undefined) ??
-    (await buildBundle(prDirectory));
-  Core.startGroup('prOutput');
-  Core.debug(JSON.stringify(prOutput, null, 2));
-  Core.endGroup();
+    (await buildBundle(cwd + prDirectory));
+  startGroup('prOutput');
+  debug(JSON.stringify(prOutput, null, 2));
+  endGroup();
 
   const baseOutput =
     ((await readCache({ commit: baseCommit })) as Bundle | undefined) ??
-    (await buildBundle(baseDirectory));
-  Core.startGroup('prOutput');
-  Core.debug(JSON.stringify(baseOutput, null, 2));
-  Core.endGroup();
+    (await buildBundle(cwd + baseDirectory));
+  startGroup('prOutput');
+  debug(JSON.stringify(baseOutput, null, 2));
+  endGroup();
 
   return { prOutput, baseOutput, prCommit, baseCommit };
 }
@@ -37,11 +40,13 @@ export async function build(prDirectory: string, baseDirectory: string) {
 type Bundle = ReturnType<typeof buildBundle> extends Promise<infer R> ? R : never;
 
 async function buildBundle(basePath: string) {
-  Core.debug(`Building Next.js for ${basePath}`);
+  debug(`Building Next.js for ${basePath}`);
   await execAsync(`cd ${basePath} && yarn`);
   await execAsync(`cd ${basePath} && NODE_ENV=production yarn build`);
 
-  const { main, module, browser, unpkg } = require(join(basePath, 'package.json')) as {
+  const { main, module, browser, unpkg } = JSON.parse(
+    await readFile(join(basePath, 'package.json'), 'utf-8'),
+  ) as {
     readonly main?: string;
     readonly module?: string;
     readonly browser?: string;

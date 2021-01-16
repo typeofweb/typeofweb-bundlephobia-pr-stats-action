@@ -1,26 +1,26 @@
-import * as Core from '@actions/core';
-import * as GitHub from '@actions/github';
+import { debug, endGroup, getInput, setFailed, startGroup } from '@actions/core';
+import { context } from '@actions/github';
 
 import { build } from './build';
 import { findExistingComment, getOctokit, saveCache } from './octokit';
 
 async function run() {
-  Core.debug(
+  debug(
     JSON.stringify(
       {
-        ...GitHub.context,
-        issue: GitHub.context.issue,
-        repo: GitHub.context.repo,
+        ...context,
+        issue: context.issue,
+        repo: context.repo,
       },
       null,
       2,
     ),
   );
 
-  Core.startGroup('build');
+  startGroup('build');
 
-  const prDirectory = Core.getInput('pr_directory_name');
-  const baseDirectory = Core.getInput('base_directory_name');
+  const prDirectory = getInput('pr_directory_name');
+  const baseDirectory = getInput('base_directory_name');
 
   const { prOutput, baseOutput, prCommit, baseCommit } = await build(prDirectory, baseDirectory);
 
@@ -32,16 +32,16 @@ async function run() {
     content: baseOutput,
     commit: baseCommit,
   });
-  Core.endGroup();
+  endGroup();
 
-  Core.startGroup('calculateSizes');
+  startGroup('calculateSizes');
   // const [prResult, baseResult] = await Promise.all([
   //   getNextPagesSize(prOutput),
   //   getNextPagesSize(baseOutput),
   // ]);
-  Core.endGroup();
+  endGroup();
 
-  Core.startGroup('postComment');
+  startGroup('postComment');
   // const comparison = generateComparison({
   //   currentResult: prResult,
   //   previousResult: baseResult,
@@ -51,45 +51,43 @@ async function run() {
   //   ...comparison,
   //   commitRange: `${baseCommit}...${prCommit}`,
   // });
-  // Core.debug(markdown);
+  // debug(markdown);
 
   const prNumber =
-    GitHub.context.payload.pull_request?.number ??
-    (GitHub.context.payload.issue?.html_url?.includes('/pull/')
-      ? GitHub.context.issue.number
-      : undefined);
+    context.payload.pull_request?.number ??
+    (context.payload.issue?.html_url?.includes('/pull/') ? context.issue.number : undefined);
 
   if (!prNumber) {
-    return Core.setFailed('Not a PR!');
+    return setFailed('Not a PR!');
   }
 
-  const Octokit = getOctokit();
+  const octokit = getOctokit();
 
-  if (!Octokit) {
-    return Core.setFailed('Missing GITHUB_TOKEN!');
+  if (!octokit) {
+    return setFailed('Missing GITHUB_TOKEN!');
   }
 
-  const existingComment = await findExistingComment(Octokit, GitHub.context, prNumber);
-  Core.debug(JSON.stringify({ existingComment }));
+  const existingComment = await findExistingComment(octokit, context, prNumber);
+  debug(JSON.stringify({ existingComment }));
 
   if (existingComment) {
-    await Octokit.issues.updateComment({
-      ...GitHub.context.repo,
+    await octokit.issues.updateComment({
+      ...context.repo,
       comment_id: existingComment.id,
       body: 'siema 2',
     });
   } else {
-    await Octokit.issues.createComment({
-      ...GitHub.context.repo,
+    await octokit.issues.createComment({
+      ...context.repo,
       issue_number: prNumber,
       body: 'siema',
     });
   }
 
-  Core.endGroup();
+  endGroup();
 }
 
 run().catch((err) => {
   console.error(err);
-  Core.setFailed(err);
+  setFailed(err);
 });
