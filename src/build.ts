@@ -10,6 +10,10 @@ import { readCache } from './octokit';
 import { execAsync } from './utils';
 
 export async function build(prDirectory: string, baseDirectory: string) {
+  Core.debug(`__dirname: ${__dirname}`);
+  Core.debug(`process.cwd(): ${process.cwd()}`);
+  Core.debug(`pwd: ${await execAsync(`pwd`)}`);
+
   const prCommit = await execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
   const baseCommit = await execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
 
