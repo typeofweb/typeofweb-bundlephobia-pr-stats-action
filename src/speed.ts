@@ -6,6 +6,7 @@ import Joi from 'joi';
 import shuffle from 'lodash.shuffle';
 import * as superstruct from 'superstruct';
 import * as yup from 'yup';
+import * as zod from 'zod';
 
 import pkg from '../package.json';
 
@@ -66,6 +67,22 @@ const cases = [
 
     bench.add(`superstruct@${version}`, () => {
       validator.validate(obj);
+    });
+  },
+
+  function zodSuite() {
+    const version = pkg.dependencies['zod'];
+
+    const schema = zod.object({
+      name: zod.string().min(4).max(25),
+      email: zod.string().nonempty().email(),
+      firstName: zod.any(),
+      phone: zod.any(),
+      age: zod.number().int().min(18),
+    });
+
+    bench.add(`zod@${version}`, () => {
+      return schema.parse(obj);
     });
   },
 
