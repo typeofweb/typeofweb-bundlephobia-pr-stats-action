@@ -12,6 +12,7 @@ import { info, warning, debug, endGroup, setFailed, startGroup } from '@actions/
 import { context, getOctokit as githubGetOctokit } from '@actions/github';
 
 import { HEADER } from './size-formatter';
+import type { CacheItem } from './types';
 import { generateMDTable } from './utils';
 
 const CACHE_KEY_PREFIX = 'typeofweb-bundle-pr-stats-action-';
@@ -40,7 +41,7 @@ export async function saveCache({
   content,
   commit,
 }: {
-  readonly content: object;
+  readonly content: CacheItem;
   readonly commit: string;
 }) {
   const key = CACHE_KEY_PREFIX + commit;
@@ -65,7 +66,7 @@ export async function readCache({
   commit,
 }: {
   readonly commit: string;
-}): Promise<unknown | undefined> {
+}): Promise<CacheItem | undefined> {
   const key = CACHE_KEY_PREFIX + commit;
 
   const foundKey = await restoreCache([key], key);
@@ -74,7 +75,7 @@ export async function readCache({
   }
   debug(`Found cache key: ${foundKey}`);
   const maybeFile = await readFile(foundKey, 'utf8');
-  return JSON.parse(maybeFile) as unknown;
+  return JSON.parse(maybeFile) as CacheItem;
 }
 
 export async function postComment({

@@ -1,8 +1,9 @@
-import { debug, endGroup, getInput, setFailed, startGroup } from '@actions/core';
+import { endGroup, getInput, setFailed, startGroup } from '@actions/core';
 import { context } from '@actions/github';
 
-import { getBuildResults } from './build';
-import { postComment } from './octokit';
+import { build } from './build';
+import { postComment, saveCache } from './octokit';
+import { sizesComparisonToMarkdownRows } from './size-formatter';
 import { runSpeedtest } from './speed';
 
 async function run() {
@@ -18,19 +19,35 @@ async function run() {
   const baseDirectory = getInput('base_directory_name');
 
   startGroup('build');
-  const buildComparisonRows = await getBuildResults({ prDirectory, baseDirectory });
+  const { prOutput, baseOutput, prCommit, baseCommit } = await build(prDirectory, baseDirectory);
+  const buildComparisonRows = sizesComparisonToMarkdownRows({ prOutput, baseOutput });
   endGroup();
 
-  debug(
-    JSON.stringify(
-      await runSpeedtest({
-        prDirectory,
-        baseDirectory,
-      }),
-      null,
-      2,
-    ),
-  );
+  const { prSpeed, baseSpeed } = await runSpeedtest({
+    prDirectory,
+    baseDirectory,
+  });
+
+  const bundleSizeResults = { prOutput, baseOutput };
+  const bundleSpeedResults = { prSpeed, baseSpeed };
+
+  const prCache = {
+    size: bundleSizeResults.prOutput,
+    speed: bundleSpeedResults.prSpeed,
+  };
+  const baseCache = {
+    size: bundleSizeResults.baseOutput,
+    speed: bundleSpeedResults.baseSpeed,
+  };
+
+  await saveCache({
+    content: prCache,
+    commit: prCommit,
+  });
+  await saveCache({
+    content: baseCache,
+    commit: baseCommit,
+  });
 
   await postComment({ buildComparisonRows, prNumber });
 }

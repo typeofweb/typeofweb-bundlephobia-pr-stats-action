@@ -76,8 +76,9 @@ const cases = [
     readonly prDirectory: string;
     readonly baseDirectory: string;
   }) {
+    const cwd = process.cwd();
     [prDirectory, baseDirectory].forEach((path) => {
-      const typeofwebSchema = require(path) as typeof tofw;
+      const typeofwebSchema = require(join(cwd, path)) as typeof tofw;
       const schema = typeofwebSchema.object({
         name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
         email: typeofwebSchema.string(),
@@ -86,26 +87,40 @@ const cases = [
         age: typeofwebSchema.number(),
       });
       const validator = typeofwebSchema.validate(schema);
-      bench.ref(`@typeofweb/schema@${path}`, () => {
-        return validator(obj);
-      });
+      if (path === baseDirectory) {
+        bench.ref(`@typeofweb/schema@${path}`, () => {
+          return validator(obj);
+        });
+      } else {
+        bench.add(`@typeofweb/schema@${path}`, () => {
+          return validator(obj);
+        });
+      }
     });
   },
 ];
 
-export function runSpeedtest({
+export async function runSpeedtest({
   prDirectory,
   baseDirectory,
 }: {
   readonly prDirectory: string;
   readonly baseDirectory: string;
 }) {
-  const cwd = process.cwd();
   shuffle(cases).map((c) =>
     c({
-      prDirectory: join(cwd, prDirectory),
-      baseDirectory: join(cwd, baseDirectory),
+      prDirectory,
+      baseDirectory,
     }),
   );
-  return bench.run();
+  const results = await bench.run();
+
+  return {
+    prSpeed: results.filter(
+      (val) => !val.name.includes('@typeofweb/schema') || !val.name.includes(baseDirectory),
+    ),
+    baseSpeed: results.filter(
+      (val) => !val.name.includes('@typeofweb/schema') || !val.name.includes(prDirectory),
+    ),
+  };
 }
