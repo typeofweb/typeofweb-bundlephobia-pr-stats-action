@@ -111430,7 +111430,7 @@ const cases = [
     },
     function typeofweb__schemaSuite({ prDirectory, baseDirectory, }) {
         [prDirectory, baseDirectory].forEach((path) => {
-            const typeofwebSchema = require(path);
+            const typeofwebSchema = require('./' + path);
             const schema = typeofwebSchema.object({
                 name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
                 email: typeofwebSchema.string(),
