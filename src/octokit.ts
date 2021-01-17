@@ -84,10 +84,7 @@ export async function postComment({
   prNumber,
 }: {
   readonly buildComparisonRows: readonly (readonly [string, string])[];
-  readonly speedComparisonRows: {
-    readonly pr: readonly (readonly [string, string, string, string])[];
-    readonly base: readonly (readonly [string, string, string, string])[];
-  };
+  readonly speedComparisonRows: readonly (readonly [string, string, string, string])[];
   readonly prNumber: number;
 }) {
   const octokit = getOctokit();
@@ -111,17 +108,7 @@ export async function postComment({
         { label: 'operations per second' },
         { label: 'avg. operation time' },
       ],
-      speedComparisonRows.pr,
-    ),
-    '### Base',
-    generateMDTable(
-      [
-        { label: 'library' },
-        { label: 'relative speed' },
-        { label: 'operations per second' },
-        { label: 'avg. operation time' },
-      ],
-      speedComparisonRows.base,
+      speedComparisonRows,
     ),
   ].join('\n');
 
