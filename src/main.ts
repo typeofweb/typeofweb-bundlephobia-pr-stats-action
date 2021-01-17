@@ -21,7 +21,16 @@ async function run() {
   const buildComparisonRows = await getBuildResults({ prDirectory, baseDirectory });
   endGroup();
 
-  debug(JSON.stringify(await runSpeedtest(), null, 2));
+  debug(
+    JSON.stringify(
+      await runSpeedtest({
+        prDirectory,
+        baseDirectory,
+      }),
+      null,
+      2,
+    ),
+  );
 
   await postComment({ buildComparisonRows, prNumber });
 }
