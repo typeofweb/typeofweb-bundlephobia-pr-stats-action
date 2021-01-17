@@ -76,10 +76,8 @@ const cases = [
     readonly prDirectory: string;
     readonly baseDirectory: string;
   }) {
-    const cwd = process.cwd();
-
     [prDirectory, baseDirectory].forEach((path) => {
-      const typeofwebSchema = require(join(cwd, path)) as typeof tofw;
+      const typeofwebSchema = require(path) as typeof tofw;
       const schema = typeofwebSchema.object({
         name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
         email: typeofwebSchema.string(),
@@ -102,10 +100,11 @@ export function runSpeedtest({
   readonly prDirectory: string;
   readonly baseDirectory: string;
 }) {
+  const cwd = process.cwd();
   shuffle(cases).map((c) =>
     c({
-      prDirectory,
-      baseDirectory,
+      prDirectory: join(cwd, prDirectory),
+      baseDirectory: join(cwd, baseDirectory),
     }),
   );
   return bench.run();

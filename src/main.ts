@@ -14,12 +14,12 @@ async function run() {
     return setFailed('Not a PR!');
   }
 
-  startGroup('build');
   const prDirectory = getInput('pr_directory_name');
   const baseDirectory = getInput('base_directory_name');
 
-  const buildComparisonRows = await getBuildResults({ prDirectory, baseDirectory });
-  endGroup();
+  // startGroup('build');
+  // const buildComparisonRows = await getBuildResults({ prDirectory, baseDirectory });
+  // endGroup();
 
   debug(
     JSON.stringify(
@@ -32,7 +32,7 @@ async function run() {
     ),
   );
 
-  await postComment({ buildComparisonRows, prNumber });
+  // await postComment({ buildComparisonRows, prNumber });
 }
 
 run().catch((err) => {
