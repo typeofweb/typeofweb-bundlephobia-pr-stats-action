@@ -1,5 +1,7 @@
+import type { Result } from 'benchmarkify';
 import prettyBytes from 'pretty-bytes';
 
+import { short } from './humanize';
 import type { Bundle } from './types';
 import { uniq } from './utils';
 
@@ -78,4 +80,43 @@ export function sizesComparisonToMarkdownRows({
           : '-',
       ] as const,
   );
+}
+
+function formatNumber(value: number, decimals = 0, sign = false) {
+  let res = Number(value.toFixed(decimals)).toLocaleString();
+  if (sign && value > 0.0) res = '+' + res;
+  return res;
+}
+
+export function speedComparisonToMarkdownRows({
+  prOutput,
+  baseOutput,
+}: {
+  readonly prOutput: readonly Result[];
+  readonly baseOutput: readonly Result[];
+}) {
+  const pr = prOutput
+    .slice()
+    .sort((a, b) => a.stat.rps - b.stat.rps)
+    .map((r) => {
+      return [
+        r.name,
+        formatNumber(r.stat.percent, 2, true) + '%',
+        '  (' + formatNumber(r.stat.rps) + ' rps)',
+        '  (avg: ' + short(r.stat.avg * 1000) + ')',
+      ] as const;
+    });
+  const base = baseOutput
+    .slice()
+    .sort((a, b) => a.stat.rps - b.stat.rps)
+    .map((r) => {
+      return [
+        r.name,
+        formatNumber(r.stat.percent, 2, true) + '%',
+        '  (' + formatNumber(r.stat.rps) + ' rps)',
+        '  (avg: ' + short(r.stat.avg * 1000) + ')',
+      ] as const;
+    });
+
+  return { pr, base };
 }

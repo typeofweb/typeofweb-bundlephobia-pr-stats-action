@@ -111097,26 +111097,17 @@ const core_1 = __nccwpck_require__(42186);
 const gzip_size_1 = __importDefault(__nccwpck_require__(9938));
 const utils_1 = __nccwpck_require__(71314);
 const { readFile } = fs_1.promises;
-async function build(prDirectory, baseDirectory) {
-    core_1.debug(`__dirname: ${__dirname}`);
-    core_1.debug(`process.cwd(): ${process.cwd()}`);
+async function build({ prDirectory, baseDirectory, }) {
     const cwd = process.cwd();
-    core_1.debug(`pwd: ${await utils_1.execAsync(`pwd`)}`);
-    const prCommit = await utils_1.execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
-    const baseCommit = await utils_1.execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
-    const prOutput = 
-    // ((await readCache({ commit: prCommit }))) ??
-    await buildBundle(path_1.join(cwd, prDirectory));
+    const prOutput = await buildBundle(path_1.join(cwd, prDirectory));
     core_1.startGroup('prOutput');
     core_1.debug(JSON.stringify(prOutput, null, 2));
     core_1.endGroup();
-    const baseOutput = 
-    // ((await readCache({ commit: baseCommit }))) ??
-    await buildBundle(path_1.join(cwd, baseDirectory));
+    const baseOutput = await buildBundle(path_1.join(cwd, baseDirectory));
     core_1.startGroup('prOutput');
     core_1.debug(JSON.stringify(baseOutput, null, 2));
     core_1.endGroup();
-    return { prOutput, baseOutput, prCommit, baseCommit };
+    return { prOutput, baseOutput };
 }
 exports.build = build;
 async function buildBundle(basePath) {
@@ -111142,6 +111133,69 @@ async function buildBundle(basePath) {
 
 /***/ }),
 
+/***/ 71939:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.format = exports.short = exports.tinyHumanTime = void 0;
+// @ts-nocheck
+/* eslint-disable */
+const units = {
+    long: [
+        'just now',
+        'nanosecond',
+        'microsecond',
+        'millisecond',
+        'second',
+        'minute',
+        'hour',
+        'day',
+        'week',
+        'year',
+    ],
+    short: ['now', 'ns', 'μs', 'ms', 's', 'm', 'h', 'd', 'w', 'y'],
+};
+function tinyHumanTime(t1, t2, u) {
+    u =
+        typeof arguments[arguments.length - 1] === 'string' ? arguments[arguments.length - 1] : 'long';
+    t1 = Array.isArray(t1) ? t1[0] * 1e3 + t1[1] / 1e6 : t1;
+    t2 = Array.isArray(t2) ? t2[0] * 1e3 + t2[1] / 1e6 : t2;
+    let milli = Math.abs(isNaN(+t2) ? t1 : t2 - t1);
+    if (milli === 0)
+        return units[u][0];
+    if (milli < 1e-3)
+        return format(Math.floor(milli * 1e6), units[u][1], u);
+    if (milli < 1)
+        return format(Math.floor(milli * 1e3), units[u][2], u);
+    if (milli < 1000)
+        return format(Math.floor(milli), units[u][3], u);
+    if ((milli /= 1000) < 60)
+        return format(Math.floor(milli), units[u][4], u);
+    if ((milli /= 60) < 60)
+        return format(Math.floor(milli), units[u][5], u);
+    if ((milli /= 60) < 24)
+        return format(Math.floor(milli), units[u][6], u);
+    if ((milli /= 24) < 7)
+        return format(Math.floor(milli), units[u][7], u);
+    if ((milli /= 7) < 52)
+        return format(Math.floor(milli), units[u][8], u);
+    return format(Math.floor(milli / 52), units[u][9], u);
+}
+exports.tinyHumanTime = tinyHumanTime;
+const short = function short(t1, t2) {
+    return tinyHumanTime(t1, t2, 'short');
+};
+exports.short = short;
+function format(n, unit, mode) {
+    return `${n + (mode === 'short' ? '' : ' ')}${unit}${mode === 'short' || n === 1 ? '' : 's'}`;
+}
+exports.format = format;
+
+
+/***/ }),
+
 /***/ 70399:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -111154,6 +111208,7 @@ const build_1 = __nccwpck_require__(46793);
 const octokit_1 = __nccwpck_require__(6161);
 const size_formatter_1 = __nccwpck_require__(73713);
 const speed_1 = __nccwpck_require__(72450);
+const utils_1 = __nccwpck_require__(71314);
 async function run() {
     var _a, _b, _c, _d;
     const prNumber = (_b = (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) !== null && _b !== void 0 ? _b : (((_d = (_c = github_1.context.payload.issue) === null || _c === void 0 ? void 0 : _c.html_url) === null || _d === void 0 ? void 0 : _d.includes('/pull/')) ? github_1.context.issue.number : undefined);
@@ -111162,9 +111217,34 @@ async function run() {
     }
     const prDirectory = core_1.getInput('pr_directory_name');
     const baseDirectory = core_1.getInput('base_directory_name');
+    core_1.debug(`__dirname: ${__dirname}`);
+    core_1.debug(`process.cwd(): ${process.cwd()}`);
+    core_1.debug(`pwd: ${await utils_1.execAsync(`pwd`)}`);
+    const results = await getResults({ prDirectory, baseDirectory });
+    const buildComparisonRows = size_formatter_1.sizesComparisonToMarkdownRows({
+        prOutput: results.prCache.size,
+        baseOutput: results.baseCache.size,
+    });
+    const speedComparisonRows = size_formatter_1.speedComparisonToMarkdownRows({
+        prOutput: results.prCache.speed,
+        baseOutput: results.baseCache.speed,
+    });
+    await octokit_1.postComment({ buildComparisonRows, speedComparisonRows, prNumber });
+}
+run().catch((err) => {
+    console.error(err);
+    core_1.setFailed(err);
+});
+async function getResults({ prDirectory, baseDirectory, }) {
+    const prCommit = await utils_1.execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
+    const baseCommit = await utils_1.execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
+    const maybePrCacheResults = await octokit_1.readCache({ commit: prCommit });
+    const maybeBaseCacheResults = await octokit_1.readCache({ commit: baseCommit });
+    if ((maybePrCacheResults === null || maybePrCacheResults === void 0 ? void 0 : maybePrCacheResults.size) && (maybePrCacheResults === null || maybePrCacheResults === void 0 ? void 0 : maybePrCacheResults.speed) && (maybeBaseCacheResults === null || maybeBaseCacheResults === void 0 ? void 0 : maybeBaseCacheResults.size) && (maybeBaseCacheResults === null || maybeBaseCacheResults === void 0 ? void 0 : maybeBaseCacheResults.speed)) {
+        return { prCache: maybePrCacheResults, baseCache: maybeBaseCacheResults };
+    }
     core_1.startGroup('build');
-    const { prOutput, baseOutput, prCommit, baseCommit } = await build_1.build(prDirectory, baseDirectory);
-    const buildComparisonRows = size_formatter_1.sizesComparisonToMarkdownRows({ prOutput, baseOutput });
+    const { prOutput, baseOutput } = await build_1.build({ prDirectory, baseDirectory });
     core_1.endGroup();
     const { prSpeed, baseSpeed } = await speed_1.runSpeedtest({
         prDirectory,
@@ -111188,12 +111268,8 @@ async function run() {
         content: baseCache,
         commit: baseCommit,
     });
-    await octokit_1.postComment({ buildComparisonRows, prNumber });
+    return { prCache, baseCache };
 }
-run().catch((err) => {
-    console.error(err);
-    core_1.setFailed(err);
-});
 
 
 /***/ }),
@@ -111259,15 +111335,33 @@ async function readCache({ commit, }) {
     return JSON.parse(maybeFile);
 }
 exports.readCache = readCache;
-async function postComment({ buildComparisonRows, prNumber, }) {
-    core_1.startGroup('postComment');
-    const body = size_formatter_1.HEADER +
-        '\n\n## Bundle size comparison' +
-        utils_1.generateMDTable([{ label: '' }, { label: 'size comparison' }], buildComparisonRows);
+async function postComment({ buildComparisonRows, speedComparisonRows, prNumber, }) {
     const octokit = getOctokit();
     if (!octokit) {
         return core_1.setFailed('Missing GITHUB_TOKEN!');
     }
+    core_1.startGroup('postComment');
+    const body = [
+        size_formatter_1.HEADER,
+        '## Bundle size comparison',
+        utils_1.generateMDTable([{ label: '' }, { label: 'size comparison' }], buildComparisonRows),
+        '\n\n',
+        '## Speed comparison',
+        '### PR',
+        utils_1.generateMDTable([
+            { label: 'library' },
+            { label: 'relative speed' },
+            { label: 'operations per second' },
+            { label: 'avg. operation time' },
+        ], speedComparisonRows.pr),
+        '### Base',
+        utils_1.generateMDTable([
+            { label: 'library' },
+            { label: 'relative speed' },
+            { label: 'operations per second' },
+            { label: 'avg. operation time' },
+        ], speedComparisonRows.base),
+    ].join('\n');
     const existingComment = await findExistingComment(octokit, github_1.context, prNumber);
     if (existingComment) {
         await octokit.issues.updateComment({
@@ -111299,8 +111393,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sizesComparisonToMarkdownRows = exports.formatDiff = exports.addPercent = exports.formatSizes = exports.formatSizeChange = exports.HEADER = void 0;
+exports.speedComparisonToMarkdownRows = exports.sizesComparisonToMarkdownRows = exports.formatDiff = exports.addPercent = exports.formatSizes = exports.formatSizeChange = exports.HEADER = void 0;
 const pretty_bytes_1 = __importDefault(__nccwpck_require__(25168));
+const humanize_1 = __nccwpck_require__(71939);
 const utils_1 = __nccwpck_require__(71314);
 exports.HEADER = '<!-- typeofweb/typeofweb-bundlephobia-pr-stats-action header -->';
 function formatSizeChange(is, was) {
@@ -111347,6 +111442,38 @@ function sizesComparisonToMarkdownRows({ prOutput, baseOutput, }) {
     ]);
 }
 exports.sizesComparisonToMarkdownRows = sizesComparisonToMarkdownRows;
+function formatNumber(value, decimals = 0, sign = false) {
+    let res = Number(value.toFixed(decimals)).toLocaleString();
+    if (sign && value > 0.0)
+        res = '+' + res;
+    return res;
+}
+function speedComparisonToMarkdownRows({ prOutput, baseOutput, }) {
+    const pr = prOutput
+        .slice()
+        .sort((a, b) => a.stat.rps - b.stat.rps)
+        .map((r) => {
+        return [
+            r.name,
+            formatNumber(r.stat.percent, 2, true) + '%',
+            '  (' + formatNumber(r.stat.rps) + ' rps)',
+            '  (avg: ' + humanize_1.short(r.stat.avg * 1000) + ')',
+        ];
+    });
+    const base = baseOutput
+        .slice()
+        .sort((a, b) => a.stat.rps - b.stat.rps)
+        .map((r) => {
+        return [
+            r.name,
+            formatNumber(r.stat.percent, 2, true) + '%',
+            '  (' + formatNumber(r.stat.rps) + ' rps)',
+            '  (avg: ' + humanize_1.short(r.stat.avg * 1000) + ')',
+        ];
+    });
+    return { pr, base };
+}
+exports.speedComparisonToMarkdownRows = speedComparisonToMarkdownRows;
 
 
 /***/ }),

@@ -1,10 +1,11 @@
-import { endGroup, getInput, setFailed, startGroup } from '@actions/core';
+import { debug, endGroup, getInput, setFailed, startGroup } from '@actions/core';
 import { context } from '@actions/github';
 
 import { build } from './build';
-import { postComment, saveCache } from './octokit';
-import { sizesComparisonToMarkdownRows } from './size-formatter';
+import { postComment, readCache, saveCache } from './octokit';
+import { sizesComparisonToMarkdownRows, speedComparisonToMarkdownRows } from './size-formatter';
 import { runSpeedtest } from './speed';
+import { execAsync } from './utils';
 
 async function run() {
   const prNumber =
@@ -17,10 +18,54 @@ async function run() {
 
   const prDirectory = getInput('pr_directory_name');
   const baseDirectory = getInput('base_directory_name');
+  debug(`__dirname: ${__dirname}`);
+  debug(`process.cwd(): ${process.cwd()}`);
+  debug(`pwd: ${await execAsync(`pwd`)}`);
+
+  const results = await getResults({ prDirectory, baseDirectory });
+
+  const buildComparisonRows = sizesComparisonToMarkdownRows({
+    prOutput: results.prCache.size,
+    baseOutput: results.baseCache.size,
+  });
+
+  const speedComparisonRows = speedComparisonToMarkdownRows({
+    prOutput: results.prCache.speed,
+    baseOutput: results.baseCache.speed,
+  });
+
+  await postComment({ buildComparisonRows, speedComparisonRows, prNumber });
+}
+
+run().catch((err) => {
+  console.error(err);
+  setFailed(err);
+});
+
+async function getResults({
+  prDirectory,
+  baseDirectory,
+}: {
+  readonly prDirectory: string;
+  readonly baseDirectory: string;
+}) {
+  const prCommit = await execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
+  const baseCommit = await execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
+
+  const maybePrCacheResults = await readCache({ commit: prCommit });
+  const maybeBaseCacheResults = await readCache({ commit: baseCommit });
+
+  if (
+    maybePrCacheResults?.size &&
+    maybePrCacheResults?.speed &&
+    maybeBaseCacheResults?.size &&
+    maybeBaseCacheResults?.speed
+  ) {
+    return { prCache: maybePrCacheResults, baseCache: maybeBaseCacheResults };
+  }
 
   startGroup('build');
-  const { prOutput, baseOutput, prCommit, baseCommit } = await build(prDirectory, baseDirectory);
-  const buildComparisonRows = sizesComparisonToMarkdownRows({ prOutput, baseOutput });
+  const { prOutput, baseOutput } = await build({ prDirectory, baseDirectory });
   endGroup();
 
   const { prSpeed, baseSpeed } = await runSpeedtest({
@@ -49,10 +94,5 @@ async function run() {
     commit: baseCommit,
   });
 
-  await postComment({ buildComparisonRows, prNumber });
+  return { prCache, baseCache };
 }
-
-run().catch((err) => {
-  console.error(err);
-  setFailed(err);
-});

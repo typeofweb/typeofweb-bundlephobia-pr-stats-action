@@ -80,22 +80,50 @@ export async function readCache({
 
 export async function postComment({
   buildComparisonRows,
+  speedComparisonRows,
   prNumber,
 }: {
   readonly buildComparisonRows: readonly (readonly [string, string])[];
+  readonly speedComparisonRows: {
+    readonly pr: readonly (readonly [string, string, string, string])[];
+    readonly base: readonly (readonly [string, string, string, string])[];
+  };
   readonly prNumber: number;
 }) {
-  startGroup('postComment');
-  const body =
-    HEADER +
-    '\n\n## Bundle size comparison' +
-    generateMDTable([{ label: '' }, { label: 'size comparison' }], buildComparisonRows);
-
   const octokit = getOctokit();
 
   if (!octokit) {
     return setFailed('Missing GITHUB_TOKEN!');
   }
+
+  startGroup('postComment');
+  const body = [
+    HEADER,
+    '## Bundle size comparison',
+    generateMDTable([{ label: '' }, { label: 'size comparison' }], buildComparisonRows),
+    '\n\n',
+    '## Speed comparison',
+    '### PR',
+    generateMDTable(
+      [
+        { label: 'library' },
+        { label: 'relative speed' },
+        { label: 'operations per second' },
+        { label: 'avg. operation time' },
+      ],
+      speedComparisonRows.pr,
+    ),
+    '### Base',
+    generateMDTable(
+      [
+        { label: 'library' },
+        { label: 'relative speed' },
+        { label: 'operations per second' },
+        { label: 'avg. operation time' },
+      ],
+      speedComparisonRows.base,
+    ),
+  ].join('\n');
 
   const existingComment = await findExistingComment(octokit, context, prNumber);
   if (existingComment) {
