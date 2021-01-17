@@ -111088,15 +111088,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getBuildResults = exports.build = void 0;
+exports.build = void 0;
 /* eslint-disable @typescript-eslint/consistent-type-imports */
 const fs_1 = __nccwpck_require__(35747);
 const path_1 = __nccwpck_require__(85622);
 const { stat } = fs_1.promises;
 const core_1 = __nccwpck_require__(42186);
 const gzip_size_1 = __importDefault(__nccwpck_require__(9938));
-const octokit_1 = __nccwpck_require__(6161);
-const size_formatter_1 = __nccwpck_require__(73713);
 const utils_1 = __nccwpck_require__(71314);
 const { readFile } = fs_1.promises;
 async function build(prDirectory, baseDirectory) {
@@ -111107,13 +111105,13 @@ async function build(prDirectory, baseDirectory) {
     const prCommit = await utils_1.execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
     const baseCommit = await utils_1.execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
     const prOutput = 
-    // ((await readCache({ commit: prCommit })) as Bundle | undefined) ??
+    // ((await readCache({ commit: prCommit }))) ??
     await buildBundle(path_1.join(cwd, prDirectory));
     core_1.startGroup('prOutput');
     core_1.debug(JSON.stringify(prOutput, null, 2));
     core_1.endGroup();
     const baseOutput = 
-    // ((await readCache({ commit: baseCommit })) as Bundle | undefined) ??
+    // ((await readCache({ commit: baseCommit }))) ??
     await buildBundle(path_1.join(cwd, baseDirectory));
     core_1.startGroup('prOutput');
     core_1.debug(JSON.stringify(baseOutput, null, 2));
@@ -111140,20 +111138,6 @@ async function buildBundle(basePath) {
     }));
     return bundleToSize.sort(([pathA], [pathB]) => pathA.localeCompare(pathB));
 }
-async function getBuildResults({ prDirectory, baseDirectory, }) {
-    const { prOutput, baseOutput, prCommit, baseCommit } = await build(prDirectory, baseDirectory);
-    await octokit_1.saveCache({
-        content: prOutput,
-        commit: prCommit,
-    });
-    await octokit_1.saveCache({
-        content: baseOutput,
-        commit: baseCommit,
-    });
-    core_1.endGroup();
-    return size_formatter_1.sizesComparisonToMarkdownRows({ prOutput, baseOutput });
-}
-exports.getBuildResults = getBuildResults;
 
 
 /***/ }),
@@ -111168,6 +111152,7 @@ const core_1 = __nccwpck_require__(42186);
 const github_1 = __nccwpck_require__(95438);
 const build_1 = __nccwpck_require__(46793);
 const octokit_1 = __nccwpck_require__(6161);
+const size_formatter_1 = __nccwpck_require__(73713);
 const speed_1 = __nccwpck_require__(72450);
 async function run() {
     var _a, _b, _c, _d;
@@ -111178,12 +111163,31 @@ async function run() {
     const prDirectory = core_1.getInput('pr_directory_name');
     const baseDirectory = core_1.getInput('base_directory_name');
     core_1.startGroup('build');
-    const buildComparisonRows = await build_1.getBuildResults({ prDirectory, baseDirectory });
+    const { prOutput, baseOutput, prCommit, baseCommit } = await build_1.build(prDirectory, baseDirectory);
+    const buildComparisonRows = size_formatter_1.sizesComparisonToMarkdownRows({ prOutput, baseOutput });
     core_1.endGroup();
-    core_1.debug(JSON.stringify(await speed_1.runSpeedtest({
+    const { prSpeed, baseSpeed } = await speed_1.runSpeedtest({
         prDirectory,
         baseDirectory,
-    }), null, 2));
+    });
+    const bundleSizeResults = { prOutput, baseOutput };
+    const bundleSpeedResults = { prSpeed, baseSpeed };
+    const prCache = {
+        size: bundleSizeResults.prOutput,
+        speed: bundleSpeedResults.prSpeed,
+    };
+    const baseCache = {
+        size: bundleSizeResults.baseOutput,
+        speed: bundleSpeedResults.baseSpeed,
+    };
+    await octokit_1.saveCache({
+        content: prCache,
+        commit: prCommit,
+    });
+    await octokit_1.saveCache({
+        content: baseCache,
+        commit: baseCommit,
+    });
     await octokit_1.postComment({ buildComparisonRows, prNumber });
 }
 run().catch((err) => {
@@ -111433,8 +111437,9 @@ const cases = [
         });
     },
     function typeofweb__schemaSuite({ prDirectory, baseDirectory, }) {
+        const cwd = process.cwd();
         [prDirectory, baseDirectory].forEach((path) => {
-            const typeofwebSchema = require(path);
+            const typeofwebSchema = require(path_1.join(cwd, path));
             const schema = typeofwebSchema.object({
                 name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
                 email: typeofwebSchema.string(),
@@ -111443,19 +111448,29 @@ const cases = [
                 age: typeofwebSchema.number(),
             });
             const validator = typeofwebSchema.validate(schema);
-            bench.ref(`@typeofweb/schema@${path}`, () => {
-                return validator(obj);
-            });
+            if (path === baseDirectory) {
+                bench.ref(`@typeofweb/schema@${path}`, () => {
+                    return validator(obj);
+                });
+            }
+            else {
+                bench.add(`@typeofweb/schema@${path}`, () => {
+                    return validator(obj);
+                });
+            }
         });
     },
 ];
-function runSpeedtest({ prDirectory, baseDirectory, }) {
-    const cwd = process.cwd();
+async function runSpeedtest({ prDirectory, baseDirectory, }) {
     lodash_shuffle_1.default(cases).map((c) => c({
-        prDirectory: path_1.join(cwd, prDirectory),
-        baseDirectory: path_1.join(cwd, baseDirectory),
+        prDirectory,
+        baseDirectory,
     }));
-    return bench.run();
+    const results = await bench.run();
+    return {
+        prSpeed: results.filter((val) => !val.name.includes('@typeofweb/schema') || !val.name.includes(baseDirectory)),
+        baseSpeed: results.filter((val) => !val.name.includes('@typeofweb/schema') || !val.name.includes(prDirectory)),
+    };
 }
 exports.runSpeedtest = runSpeedtest;
 
