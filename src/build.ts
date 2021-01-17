@@ -6,7 +6,7 @@ const { stat } = fsp;
 import { debug, startGroup, endGroup } from '@actions/core';
 import gzipSize from 'gzip-size';
 
-import { readCache, saveCache } from './octokit';
+import { saveCache } from './octokit';
 import { sizesComparisonToMarkdownRows } from './size-formatter';
 import { Bundle } from './types';
 import { execAsync } from './utils';
@@ -23,15 +23,15 @@ export async function build(prDirectory: string, baseDirectory: string) {
   const baseCommit = await execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
 
   const prOutput =
-    ((await readCache({ commit: prCommit })) as Bundle | undefined) ??
-    (await buildBundle(join(cwd, prDirectory)));
+    // ((await readCache({ commit: prCommit })) as Bundle | undefined) ??
+    await buildBundle(join(cwd, prDirectory));
   startGroup('prOutput');
   debug(JSON.stringify(prOutput, null, 2));
   endGroup();
 
   const baseOutput =
-    ((await readCache({ commit: baseCommit })) as Bundle | undefined) ??
-    (await buildBundle(join(cwd, baseDirectory)));
+    // ((await readCache({ commit: baseCommit })) as Bundle | undefined) ??
+    await buildBundle(join(cwd, baseDirectory));
   startGroup('prOutput');
   debug(JSON.stringify(baseOutput, null, 2));
   endGroup();
