@@ -75,7 +75,7 @@ const cases = [
     readonly baseDirectory: string;
   }) {
     [prDirectory, baseDirectory].forEach((path) => {
-      const typeofwebSchema = require(path) as typeof tofw;
+      const typeofwebSchema = require('./' + path) as typeof tofw;
       const schema = typeofwebSchema.object({
         name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
         email: typeofwebSchema.string(),
