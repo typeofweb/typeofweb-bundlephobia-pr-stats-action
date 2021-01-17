@@ -6,7 +6,9 @@ const { stat } = fsp;
 import { debug, startGroup, endGroup } from '@actions/core';
 import gzipSize from 'gzip-size';
 
-import { readCache } from './octokit';
+import { readCache, saveCache } from './octokit';
+import { sizesComparisonToMarkdownRows } from './size-formatter';
+import { Bundle } from './types';
 import { execAsync } from './utils';
 
 const { readFile } = fsp;
@@ -37,9 +39,7 @@ export async function build(prDirectory: string, baseDirectory: string) {
   return { prOutput, baseOutput, prCommit, baseCommit };
 }
 
-type Bundle = ReturnType<typeof buildBundle> extends Promise<infer R> ? R : never;
-
-async function buildBundle(basePath: string) {
+async function buildBundle(basePath: string): Promise<Bundle> {
   debug(`Building Next.js for ${basePath}`);
   await execAsync(`cd ${basePath} && yarn`);
   await execAsync(`cd ${basePath} && NODE_ENV=production yarn build`);
@@ -73,4 +73,25 @@ async function buildBundle(basePath: string) {
   );
 
   return bundleToSize.sort(([pathA], [pathB]) => pathA.localeCompare(pathB));
+}
+
+export async function getBuildResults({
+  prDirectory,
+  baseDirectory,
+}: {
+  readonly prDirectory: string;
+  readonly baseDirectory: string;
+}) {
+  const { prOutput, baseOutput, prCommit, baseCommit } = await build(prDirectory, baseDirectory);
+
+  await saveCache({
+    content: prOutput,
+    commit: prCommit,
+  });
+  await saveCache({
+    content: baseOutput,
+    commit: baseCommit,
+  });
+  endGroup();
+  return sizesComparisonToMarkdownRows({ prOutput, baseOutput });
 }
