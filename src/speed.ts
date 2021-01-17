@@ -1,3 +1,5 @@
+import { join } from 'path';
+
 import type * as tofw from '@typeofweb/schema';
 import Benchmarkify from 'benchmarkify';
 import Joi from 'joi';
@@ -74,8 +76,10 @@ const cases = [
     readonly prDirectory: string;
     readonly baseDirectory: string;
   }) {
+    const cwd = process.cwd();
+
     [prDirectory, baseDirectory].forEach((path) => {
-      const typeofwebSchema = require('./' + path) as typeof tofw;
+      const typeofwebSchema = require(join(cwd, path)) as typeof tofw;
       const schema = typeofwebSchema.object({
         name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
         email: typeofwebSchema.string(),
