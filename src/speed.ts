@@ -78,7 +78,7 @@ const cases = [
       age: typeofwebSchema.number(),
     });
     const validator = typeofwebSchema.validate(schema);
-    bench.add(`@typeofweb/schema@${version}`, () => {
+    bench.ref(`@typeofweb/schema@${version}`, () => {
       return validator(obj);
     });
   },
