@@ -111353,14 +111353,7 @@ async function postComment({ buildComparisonRows, speedComparisonRows, prNumber,
             { label: 'relative speed' },
             { label: 'operations per second' },
             { label: 'avg. operation time' },
-        ], speedComparisonRows.pr),
-        '### Base',
-        utils_1.generateMDTable([
-            { label: 'library' },
-            { label: 'relative speed' },
-            { label: 'operations per second' },
-            { label: 'avg. operation time' },
-        ], speedComparisonRows.base),
+        ], speedComparisonRows),
     ].join('\n');
     const existingComment = await findExistingComment(octokit, github_1.context, prNumber);
     if (existingComment) {
@@ -111449,9 +111442,12 @@ function formatNumber(value, decimals = 0, sign = false) {
     return res;
 }
 function speedComparisonToMarkdownRows({ prOutput, baseOutput, }) {
-    const pr = prOutput
+    return [
+        ...prOutput,
+        baseOutput.find((x) => x.name.includes('@typeofweb/schema')),
+    ]
         .slice()
-        .sort((a, b) => a.stat.rps - b.stat.rps)
+        .sort((a, b) => b.stat.rps - a.stat.rps)
         .map((r) => {
         return [
             r.name,
@@ -111460,18 +111456,6 @@ function speedComparisonToMarkdownRows({ prOutput, baseOutput, }) {
             '  (avg: ' + humanize_1.short(r.stat.avg * 1000) + ')',
         ];
     });
-    const base = baseOutput
-        .slice()
-        .sort((a, b) => a.stat.rps - b.stat.rps)
-        .map((r) => {
-        return [
-            r.name,
-            formatNumber(r.stat.percent, 2, true) + '%',
-            '  (' + formatNumber(r.stat.rps) + ' rps)',
-            '  (avg: ' + humanize_1.short(r.stat.avg * 1000) + ')',
-        ];
-    });
-    return { pr, base };
 }
 exports.speedComparisonToMarkdownRows = speedComparisonToMarkdownRows;
 

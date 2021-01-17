@@ -95,9 +95,12 @@ export function speedComparisonToMarkdownRows({
   readonly prOutput: readonly Result[];
   readonly baseOutput: readonly Result[];
 }) {
-  const pr = prOutput
+  return ([
+    ...prOutput,
+    baseOutput.find((x) => x.name.includes('@typeofweb/schema')),
+  ] as readonly Result[])
     .slice()
-    .sort((a, b) => a.stat.rps - b.stat.rps)
+    .sort((a, b) => b.stat.rps - a.stat.rps)
     .map((r) => {
       return [
         r.name,
@@ -106,17 +109,4 @@ export function speedComparisonToMarkdownRows({
         '  (avg: ' + short(r.stat.avg * 1000) + ')',
       ] as const;
     });
-  const base = baseOutput
-    .slice()
-    .sort((a, b) => a.stat.rps - b.stat.rps)
-    .map((r) => {
-      return [
-        r.name,
-        formatNumber(r.stat.percent, 2, true) + '%',
-        '  (' + formatNumber(r.stat.rps) + ' rps)',
-        '  (avg: ' + short(r.stat.avg * 1000) + ')',
-      ] as const;
-    });
-
-  return { pr, base };
 }
