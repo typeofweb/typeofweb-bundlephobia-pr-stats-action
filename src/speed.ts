@@ -1,4 +1,4 @@
-import * as typeofwebSchema from '@typeofweb/schema';
+import type * as tofw from '@typeofweb/schema';
 import Benchmarkify from 'benchmarkify';
 import Joi from 'joi';
 import shuffle from 'lodash.shuffle';
@@ -67,24 +67,42 @@ const cases = [
     });
   },
 
-  function typeofweb__schemaSuite() {
-    const version = pkg.dependencies['@typeofweb/schema'];
-
-    const schema = typeofwebSchema.object({
-      name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
-      email: typeofwebSchema.string(),
-      firstName: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
-      phone: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
-      age: typeofwebSchema.number(),
-    });
-    const validator = typeofwebSchema.validate(schema);
-    bench.ref(`@typeofweb/schema@${version}`, () => {
-      return validator(obj);
+  function typeofweb__schemaSuite({
+    prDirectory,
+    baseDirectory,
+  }: {
+    readonly prDirectory: string;
+    readonly baseDirectory: string;
+  }) {
+    [prDirectory, baseDirectory].forEach((path) => {
+      const typeofwebSchema = require(path) as typeof tofw;
+      const schema = typeofwebSchema.object({
+        name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
+        email: typeofwebSchema.string(),
+        firstName: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
+        phone: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
+        age: typeofwebSchema.number(),
+      });
+      const validator = typeofwebSchema.validate(schema);
+      bench.ref(`@typeofweb/schema@${path}`, () => {
+        return validator(obj);
+      });
     });
   },
 ];
 
-export function runSpeedtest() {
-  shuffle(cases).map((c) => c());
+export function runSpeedtest({
+  prDirectory,
+  baseDirectory,
+}: {
+  readonly prDirectory: string;
+  readonly baseDirectory: string;
+}) {
+  shuffle(cases).map((c) =>
+    c({
+      prDirectory,
+      baseDirectory,
+    }),
+  );
   return bench.run();
 }

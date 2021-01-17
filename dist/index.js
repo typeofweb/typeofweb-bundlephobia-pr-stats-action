@@ -49532,431 +49532,6 @@ exports.location = function (depth = 0) {
 
 /***/ }),
 
-/***/ 21465:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-/**
- * @typeofweb/schema@0.4.4
- * Copyright (c) 2021 Type of Web - Michał Miszczyszyn
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-const optional = (schema) => {
-  return {
-    ...schema,
-    __modifiers: {
-      ...schema.__modifiers,
-      optional: true,
-    },
-  };
-};
-const nullable = (schema) => {
-  return {
-    ...schema,
-    __modifiers: {
-      ...schema.__modifiers,
-      nullable: true,
-    },
-  };
-};
-const nil = (schema) => {
-  return {
-    ...schema,
-    __modifiers: {
-      ...schema.__modifiers,
-      optional: true,
-      nullable: true,
-    },
-  };
-};
-const minLength = (length) => (schema) => {
-  return {
-    ...schema,
-    __modifiers: {
-      ...schema.__modifiers,
-      minLength: length,
-    },
-  };
-};
-const nonEmpty = minLength(1);
-
-const TYPEOFWEB_SCHEMA = Symbol('@typeofweb/schema');
-const LITERAL_VALIDATOR = Symbol('_literal');
-const STRING_VALIDATOR = Symbol('string');
-const NUMBER_VALIDATOR = Symbol('number');
-const BOOLEAN_VALIDATOR = Symbol('boolean');
-const DATE_VALIDATOR = Symbol('Date');
-const UNKNOWN_VALIDATOR = Symbol('_unknown');
-const SIMPLE_VALIDATORS = [
-  STRING_VALIDATOR,
-  NUMBER_VALIDATOR,
-  BOOLEAN_VALIDATOR,
-  DATE_VALIDATOR,
-  UNKNOWN_VALIDATOR,
-];
-const isSimpleSchema = (s) => SIMPLE_VALIDATORS.includes(s.__validator);
-const isLiteralSchema = (s) => s.__validator === LITERAL_VALIDATOR;
-const isArraySchema = (s) => Array.isArray(s.__validator);
-const isOptionalSchema = (s) => !!s.__modifiers.optional;
-const isSchema = (val) => {
-  return (
-    typeof val === 'object' &&
-    val !== null &&
-    '__validator' in val &&
-    '__modifiers' in val &&
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    val[TYPEOFWEB_SCHEMA] === true
-  );
-};
-// `U extends (keyof any)[]` and `[...U]` is a trick to force TypeScript to narrow the type correctly
-// thanks to this, there's no need for "as const": oneOf(['a', 'b']) works as oneOf(['a', 'b'] as const)
-const oneOf = (values) => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: LITERAL_VALIDATOR,
-    __values: values,
-    __type: {},
-    __modifiers: { optional: false, nullable: false },
-  };
-};
-const string = () => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: STRING_VALIDATOR,
-    __modifiers: { optional: false, nullable: false },
-  };
-};
-const number = () => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: NUMBER_VALIDATOR,
-    __modifiers: { optional: false, nullable: false },
-  };
-};
-const boolean = () => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: BOOLEAN_VALIDATOR,
-    __modifiers: { optional: false, nullable: false },
-  };
-};
-const date = () => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: DATE_VALIDATOR,
-    __modifiers: { optional: false, nullable: false },
-  };
-};
-const object = (obj) => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: obj,
-    __modifiers: { optional: false, nullable: false },
-    __type: {},
-    __values: {},
-  };
-};
-const array = (...arr) => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: arr,
-    __modifiers: { optional: false, nullable: false },
-    __type: {},
-    __values: {},
-  };
-};
-const unknown = () => {
-  return {
-    [TYPEOFWEB_SCHEMA]: true,
-    __validator: UNKNOWN_VALIDATOR,
-    __modifiers: { optional: true, nullable: true },
-  };
-};
-
-/* eslint-disable functional/no-this-expression */
-const validatorToString = {
-  [STRING_VALIDATOR]: 'string',
-  [NUMBER_VALIDATOR]: 'number',
-  [BOOLEAN_VALIDATOR]: 'boolean',
-  [DATE_VALIDATOR]: 'Date',
-  [UNKNOWN_VALIDATOR]: 'unknown',
-};
-const typeToPrint = (str) => '≫' + str + '≪';
-const objectToPrint = (str) => '{' + str + '}';
-const quote = (str) => (/\s/.test(str) ? `"${str}"` : str);
-const arrayToPrint = (arr) => {
-  const str = arr.join(' | ');
-  if (arr.length > 1) {
-    return typeToPrint(`(${str})[]`);
-  }
-  return typeToPrint(`${str}[]`);
-};
-const literalToPrint = (arr) => {
-  const str = arr.join(' | ');
-  if (arr.length > 1) {
-    return `(${str})`;
-  }
-  return str;
-};
-const getModifiers = (v) => {
-  const modifiers = [v.__modifiers.optional && 'undefined', v.__modifiers.nullable && 'null'];
-  return modifiers.filter((m) => Boolean(m));
-};
-const simpleSchemaToPrint = (v, shouldWrap = true) => {
-  const name = validatorToString[v.__validator];
-  const modifiers = v.__validator === UNKNOWN_VALIDATOR ? [] : getModifiers(v);
-  const values = [shouldWrap ? typeToPrint(name) : name, ...modifiers];
-  return literalToPrint(values);
-};
-const schemaRecordToPrint = (record) => {
-  const entries = Object.entries(record).map(([key, val]) => [key, schemaToString(val)]);
-  if (entries.length === 0) {
-    return objectToPrint('');
-  }
-  return objectToPrint(' ' + entries.map(([key, val]) => quote(key) + ': ' + val).join(', ') + ' ');
-};
-const schemaToString = (schema) => {
-  if (isSimpleSchema(schema)) {
-    return simpleSchemaToPrint(schema);
-  }
-  const modifiers = getModifiers(schema);
-  if (isLiteralSchema(schema)) {
-    return literalToPrint([
-      ...schema.__values.map((v) => (isSchema(v) ? schemaToString(v) : String(v))),
-      ...modifiers,
-    ]);
-  }
-  if (isArraySchema(schema)) {
-    return literalToPrint([
-      arrayToPrint(
-        schema.__validator.map((s) =>
-          isSchema(s) && isSimpleSchema(s) ? simpleSchemaToPrint(s, false) : schemaToString(s),
-        ),
-      ),
-      ...modifiers,
-    ]);
-  }
-  return literalToPrint([schemaRecordToPrint(schema.__validator), ...modifiers]);
-};
-class ValidationError extends Error {
-  constructor(schema, value) {
-    const expected = schemaToString(schema);
-    const got = JSON.stringify(value);
-    const d = {
-      kind: 'TYPE_MISMATCH',
-      got,
-      expected,
-    };
-    super(`Invalid type! Expected ${d.expected} but got ${d.got}!`);
-    this.details = d;
-    this.name = 'ValidationError';
-    Error.captureStackTrace(this);
-    Object.setPrototypeOf(this, ValidationError.prototype);
-  }
-}
-
-const isDate = (d) => Object.prototype.toString.call(d) === '[object Date]';
-function pipe(schema, ...rest) {
-  return rest.reduce((acc, mod) => mod(acc), typeof schema === 'function' ? schema() : schema);
-}
-const λ = pipe;
-
-const simplifiedISODateStringRegex = /^[+-]?\d{4}/;
-const isISODateString = (value) => simplifiedISODateStringRegex.test(value);
-const parse = (validator) => (value) => {
-  switch (validator) {
-    case NUMBER_VALIDATOR:
-      if (typeof value === 'string') {
-        if (value.trim() === '') {
-          return value;
-        }
-        const parsedNumber = Number(value);
-        return parsedNumber;
-      }
-      break;
-    case DATE_VALIDATOR:
-      if (typeof value === 'string') {
-        if (isISODateString(value)) {
-          const parsedDate = new Date(value);
-          return parsedDate;
-        }
-        return value;
-      }
-      break;
-    case STRING_VALIDATOR:
-      if (isDate(value)) {
-        const parsedISOString = value.toISOString();
-        return parsedISOString;
-      }
-      break;
-  }
-  return value;
-};
-
-const assertUnreachable = (val) => {
-  /* istanbul ignore next */
-  throw new Error(val);
-};
-const validate = (schema) => (value) => {
-  if (schema.__validator === UNKNOWN_VALIDATOR) {
-    return value;
-  }
-  if (value === undefined) {
-    if (schema.__modifiers.optional) {
-      return value;
-    } else {
-      throw new ValidationError(schema, value);
-    }
-  }
-  if (value === null) {
-    if (schema.__modifiers.nullable) {
-      return value;
-    } else {
-      throw new ValidationError(schema, value);
-    }
-  }
-  if (Array.isArray(schema.__validator)) {
-    const validators = schema.__validator;
-    if (!Array.isArray(value)) {
-      throw new ValidationError(schema, value);
-    }
-    if (
-      typeof schema.__modifiers.minLength === 'number' &&
-      value.length < schema.__modifiers.minLength
-    ) {
-      throw new ValidationError(schema, value);
-    }
-    return value.map((val) => {
-      const validationResult = validators.reduce(
-        (acc, validator) => {
-          if (acc.isValid) {
-            return acc;
-          }
-          try {
-            const result = validate(validator)(val);
-            return { isValid: true, result };
-          } catch {}
-          return { isValid: false, result: undefined };
-        },
-        { isValid: false, result: undefined },
-      );
-      if (validationResult.isValid) {
-        return validationResult.result;
-      }
-      throw new ValidationError(schema, value);
-    });
-  }
-  if (typeof schema.__validator === 'object') {
-    if (typeof value !== 'object') {
-      throw new ValidationError(schema, value);
-    }
-    const validators = schema.__validator;
-    const valueEntries = Object.entries(value);
-    const validatorValues = Object.values(validators);
-    const allValidatorKeysCount = validatorValues.length;
-    const requiredValidatorKeysCount = validatorValues.reduce(
-      (acc, schema) => acc + (isOptionalSchema(schema) ? 0 : 1),
-      0,
-    );
-    if (
-      valueEntries.length > allValidatorKeysCount ||
-      valueEntries.length < requiredValidatorKeysCount
-    ) {
-      throw new ValidationError(schema, value);
-    }
-    const obj = valueEntries.reduce((acc, [key, val]) => {
-      if (!validators[key]) {
-        throw new ValidationError(schema, value);
-      }
-      acc[key] = validate(validators[key])(val);
-      return acc;
-    }, {});
-    return obj;
-  }
-  const parsedValue = parse(schema.__validator)(value);
-  switch (schema.__validator) {
-    case STRING_VALIDATOR:
-      if (typeof parsedValue !== 'string') {
-        throw new ValidationError(schema, value);
-      }
-      if (
-        typeof schema.__modifiers.minLength === 'number' &&
-        parsedValue.length < schema.__modifiers.minLength
-      ) {
-        throw new ValidationError(schema, value);
-      }
-      return parsedValue;
-    case NUMBER_VALIDATOR:
-      if (typeof parsedValue !== 'number' || Number.isNaN(parsedValue)) {
-        throw new ValidationError(schema, value);
-      }
-      return parsedValue;
-    case BOOLEAN_VALIDATOR:
-      if (typeof parsedValue !== 'boolean') {
-        throw new ValidationError(schema, value);
-      }
-      return parsedValue;
-    case DATE_VALIDATOR:
-      if (!isDate(parsedValue) || Number.isNaN(Number(parsedValue))) {
-        throw new ValidationError(schema, value);
-      }
-      return parsedValue;
-    case LITERAL_VALIDATOR:
-      const validationResult = schema.__values.reduce(
-        (acc, valueOrValidator) => {
-          if (acc.isValid) {
-            return acc;
-          }
-          if (isSchema(valueOrValidator)) {
-            try {
-              const result = validate(valueOrValidator)(value);
-              return { isValid: true, result };
-            } catch {}
-            return { isValid: false, result: undefined };
-          } else {
-            return { isValid: value === valueOrValidator, result: valueOrValidator };
-          }
-        },
-        { isValid: false, result: undefined },
-      );
-      if (!validationResult.isValid) {
-        throw new ValidationError(schema, value);
-      }
-      return validationResult.result;
-  }
-  /* istanbul ignore next */
-  return assertUnreachable(schema.__validator);
-};
-
-exports.ValidationError = ValidationError;
-exports.array = array;
-exports.boolean = boolean;
-exports.date = date;
-exports.isSchema = isSchema;
-exports.minLength = minLength;
-exports.nil = nil;
-exports.nonEmpty = nonEmpty;
-exports.nullable = nullable;
-exports.number = number;
-exports.object = object;
-exports.oneOf = oneOf;
-exports.optional = optional;
-exports.pipe = pipe;
-exports.string = string;
-exports.unknown = unknown;
-exports.validate = validate;
-exports["λ"] = λ;
-
-
-/***/ }),
-
 /***/ 14812:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -111602,7 +111177,10 @@ async function run() {
     const baseDirectory = core_1.getInput('base_directory_name');
     const buildComparisonRows = await build_1.getBuildResults({ prDirectory, baseDirectory });
     core_1.endGroup();
-    core_1.debug(JSON.stringify(await speed_1.runSpeedtest(), null, 2));
+    core_1.debug(JSON.stringify(await speed_1.runSpeedtest({
+        prDirectory,
+        baseDirectory,
+    }), null, 2));
     await octokit_1.postComment({ buildComparisonRows, prNumber });
 }
 run().catch((err) => {
@@ -111795,7 +111373,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runSpeedtest = void 0;
-const typeofwebSchema = __importStar(__nccwpck_require__(21465));
 const benchmarkify_1 = __importDefault(__nccwpck_require__(67771));
 const joi_1 = __importDefault(__nccwpck_require__(20918));
 const lodash_shuffle_1 = __importDefault(__nccwpck_require__(66870));
@@ -111851,23 +111428,28 @@ const cases = [
             validator.validate(obj);
         });
     },
-    function typeofweb__schemaSuite() {
-        const version = package_json_1.default.dependencies['@typeofweb/schema'];
-        const schema = typeofwebSchema.object({
-            name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
-            email: typeofwebSchema.string(),
-            firstName: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
-            phone: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
-            age: typeofwebSchema.number(),
-        });
-        const validator = typeofwebSchema.validate(schema);
-        bench.ref(`@typeofweb/schema@${version}`, () => {
-            return validator(obj);
+    function typeofweb__schemaSuite({ prDirectory, baseDirectory, }) {
+        [prDirectory, baseDirectory].forEach((path) => {
+            const typeofwebSchema = require(path);
+            const schema = typeofwebSchema.object({
+                name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
+                email: typeofwebSchema.string(),
+                firstName: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
+                phone: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
+                age: typeofwebSchema.number(),
+            });
+            const validator = typeofwebSchema.validate(schema);
+            bench.ref(`@typeofweb/schema@${path}`, () => {
+                return validator(obj);
+            });
         });
     },
 ];
-function runSpeedtest() {
-    lodash_shuffle_1.default(cases).map((c) => c());
+function runSpeedtest({ prDirectory, baseDirectory, }) {
+    lodash_shuffle_1.default(cases).map((c) => c({
+        prDirectory,
+        baseDirectory,
+    }));
     return bench.run();
 }
 exports.runSpeedtest = runSpeedtest;
