@@ -1,8 +1,9 @@
-import { endGroup, getInput, setFailed, startGroup } from '@actions/core';
+import { debug, endGroup, getInput, setFailed, startGroup } from '@actions/core';
 import { context } from '@actions/github';
 
 import { getBuildResults } from './build';
 import { postComment } from './octokit';
+import { runSpeedtest } from './speed';
 
 async function run() {
   const prNumber =
@@ -19,6 +20,8 @@ async function run() {
 
   const buildComparisonRows = await getBuildResults({ prDirectory, baseDirectory });
   endGroup();
+
+  debug(JSON.stringify(await runSpeedtest(), null, 2));
 
   await postComment({ buildComparisonRows, prNumber });
 }
