@@ -111373,6 +111373,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runSpeedtest = void 0;
+const path_1 = __nccwpck_require__(85622);
 const benchmarkify_1 = __importDefault(__nccwpck_require__(67771));
 const joi_1 = __importDefault(__nccwpck_require__(20918));
 const lodash_shuffle_1 = __importDefault(__nccwpck_require__(66870));
@@ -111429,8 +111430,9 @@ const cases = [
         });
     },
     function typeofweb__schemaSuite({ prDirectory, baseDirectory, }) {
+        const cwd = process.cwd();
         [prDirectory, baseDirectory].forEach((path) => {
-            const typeofwebSchema = require('./' + path);
+            const typeofwebSchema = require(path_1.join(cwd, path));
             const schema = typeofwebSchema.object({
                 name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
                 email: typeofwebSchema.string(),
