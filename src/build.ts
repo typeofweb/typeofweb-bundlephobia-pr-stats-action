@@ -6,37 +6,31 @@ const { stat } = fsp;
 import { debug, startGroup, endGroup } from '@actions/core';
 import gzipSize from 'gzip-size';
 
-// import { saveCache } from './octokit';
-// import { sizesComparisonToMarkdownRows } from './size-formatter';
 import { Bundle } from './types';
 import { execAsync } from './utils';
 
 const { readFile } = fsp;
 
-export async function build(prDirectory: string, baseDirectory: string) {
-  debug(`__dirname: ${__dirname}`);
-  debug(`process.cwd(): ${process.cwd()}`);
+export async function build({
+  prDirectory,
+  baseDirectory,
+}: {
+  readonly prDirectory: string;
+  readonly baseDirectory: string;
+}) {
   const cwd = process.cwd();
-  debug(`pwd: ${await execAsync(`pwd`)}`);
 
-  const prCommit = await execAsync(`cd ${prDirectory} && git rev-parse HEAD:`);
-  const baseCommit = await execAsync(`cd ${baseDirectory} && git rev-parse HEAD:`);
-
-  const prOutput =
-    // ((await readCache({ commit: prCommit }))) ??
-    await buildBundle(join(cwd, prDirectory));
+  const prOutput = await buildBundle(join(cwd, prDirectory));
   startGroup('prOutput');
   debug(JSON.stringify(prOutput, null, 2));
   endGroup();
 
-  const baseOutput =
-    // ((await readCache({ commit: baseCommit }))) ??
-    await buildBundle(join(cwd, baseDirectory));
+  const baseOutput = await buildBundle(join(cwd, baseDirectory));
   startGroup('prOutput');
   debug(JSON.stringify(baseOutput, null, 2));
   endGroup();
 
-  return { prOutput, baseOutput, prCommit, baseCommit };
+  return { prOutput, baseOutput };
 }
 
 async function buildBundle(basePath: string): Promise<Bundle> {
