@@ -1,7 +1,5 @@
 import { exec } from 'child_process';
 
-import PrettyBytes from 'pretty-bytes';
-
 export const ZERO_WIDTH_SPACE = '&#xfeff;';
 
 export function execAsync(args: string): Promise<string> {
@@ -28,24 +26,6 @@ export function uniqKeys<R extends object, U extends object>(
     ...((Object.keys(obj1) as unknown) as ReadonlyArray<keyof R>),
     ...((Object.keys(obj2) as unknown) as ReadonlyArray<keyof U>),
   ]);
-}
-
-export function addPercent(change: number, goodEmoji = '▼', badEmoji = ':small_red_triangle:') {
-  const formatted = (change * 100).toFixed(2);
-  if (/^-|^0(?:\.0+)$/.test(formatted)) {
-    return `${formatted}%${goodEmoji ? ' ' + goodEmoji : ''}`;
-  }
-  return `+${formatted}%${badEmoji ? ' ' + badEmoji : ''}`;
-}
-
-export function formatDiff(absoluteChange: number, relativeChange: number) {
-  if (absoluteChange === 0) {
-    return '--';
-  }
-
-  return ` ▶️ ${PrettyBytes(absoluteChange, {
-    signed: true,
-  })} (${addPercent(relativeChange)})`;
 }
 
 type TupleOf<

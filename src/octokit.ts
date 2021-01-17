@@ -1,4 +1,5 @@
 import { promises as fsp } from 'fs';
+
 const { readFile, writeFile, unlink } = fsp;
 
 import {
@@ -7,11 +8,11 @@ import {
   ReserveCacheError,
   restoreCache,
 } from '@actions/cache';
-import { info, warning, debug } from '@actions/core';
-import type { context } from '@actions/github';
-import { getOctokit as githubGetOctokit } from '@actions/github';
+import { info, warning, debug, endGroup, setFailed, startGroup } from '@actions/core';
+import { context, getOctokit as githubGetOctokit } from '@actions/github';
 
 import { HEADER } from './size-formatter';
+import { generateMDTable } from './utils';
 
 const CACHE_KEY_PREFIX = 'typeofweb-bundle-pr-stats-action-';
 
@@ -74,4 +75,40 @@ export async function readCache({
   debug(`Found cache key: ${foundKey}`);
   const maybeFile = await readFile(foundKey, 'utf8');
   return JSON.parse(maybeFile) as unknown;
+}
+
+export async function postComment({
+  buildComparisonRows,
+  prNumber,
+}: {
+  readonly buildComparisonRows: readonly (readonly [string, string])[];
+  readonly prNumber: number;
+}) {
+  startGroup('postComment');
+  const body =
+    HEADER +
+    '\n\n## Bundle size comparison' +
+    generateMDTable([{ label: '' }, { label: 'size comparison' }], buildComparisonRows);
+
+  const octokit = getOctokit();
+
+  if (!octokit) {
+    return setFailed('Missing GITHUB_TOKEN!');
+  }
+
+  const existingComment = await findExistingComment(octokit, context, prNumber);
+  if (existingComment) {
+    await octokit.issues.updateComment({
+      ...context.repo,
+      comment_id: existingComment.id,
+      body,
+    });
+  } else {
+    await octokit.issues.createComment({
+      ...context.repo,
+      issue_number: prNumber,
+      body,
+    });
+  }
+  endGroup();
 }
