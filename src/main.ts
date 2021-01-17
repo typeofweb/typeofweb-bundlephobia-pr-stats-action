@@ -14,10 +14,10 @@ async function run() {
     return setFailed('Not a PR!');
   }
 
-  startGroup('build');
   const prDirectory = getInput('pr_directory_name');
   const baseDirectory = getInput('base_directory_name');
 
+  startGroup('build');
   const buildComparisonRows = await getBuildResults({ prDirectory, baseDirectory });
   endGroup();
 

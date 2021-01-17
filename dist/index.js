@@ -111172,9 +111172,9 @@ async function run() {
     if (!prNumber) {
         return core_1.setFailed('Not a PR!');
     }
-    core_1.startGroup('build');
     const prDirectory = core_1.getInput('pr_directory_name');
     const baseDirectory = core_1.getInput('base_directory_name');
+    core_1.startGroup('build');
     const buildComparisonRows = await build_1.getBuildResults({ prDirectory, baseDirectory });
     core_1.endGroup();
     core_1.debug(JSON.stringify(await speed_1.runSpeedtest({
@@ -111430,9 +111430,8 @@ const cases = [
         });
     },
     function typeofweb__schemaSuite({ prDirectory, baseDirectory, }) {
-        const cwd = process.cwd();
         [prDirectory, baseDirectory].forEach((path) => {
-            const typeofwebSchema = require(path_1.join(cwd, path));
+            const typeofwebSchema = require(path);
             const schema = typeofwebSchema.object({
                 name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
                 email: typeofwebSchema.string(),
@@ -111448,9 +111447,10 @@ const cases = [
     },
 ];
 function runSpeedtest({ prDirectory, baseDirectory, }) {
+    const cwd = process.cwd();
     lodash_shuffle_1.default(cases).map((c) => c({
-        prDirectory,
-        baseDirectory,
+        prDirectory: path_1.join(cwd, prDirectory),
+        baseDirectory: path_1.join(cwd, baseDirectory),
     }));
     return bench.run();
 }
