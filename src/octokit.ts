@@ -1,7 +1,4 @@
 import { promises as fsp } from 'fs';
-import { gunzipSync } from 'zlib';
-
-const { readFile, writeFile, unlink } = fsp;
 
 import {
   saveCache as actionsSaveCache,
@@ -11,10 +8,13 @@ import {
 } from '@actions/cache';
 import { info, warning, debug, endGroup, setFailed, startGroup } from '@actions/core';
 import { context, getOctokit as githubGetOctokit } from '@actions/github';
+import decompress from 'decompress';
 
 import { HEADER } from './size-formatter';
 import type { CacheItem } from './types';
 import { generateMDTable } from './utils';
+
+const { readFile, writeFile, unlink } = fsp;
 
 const CACHE_KEY_PREFIX = 'typeofweb-bundle-pr-stats-action-';
 
@@ -64,9 +64,11 @@ export async function findArtifact(
   });
   debug(JSON.stringify(Buffer.from(download.data as any).toString('base64'), null, 2));
 
-  const result = gunzipSync(download.data as any);
+  const files = await decompress(Buffer.from(download.data as any));
 
-  return result.toString('utf-8');
+  debug(JSON.stringify(files, null, 2));
+
+  return files[0]?.data.toString('utf-8');
 }
 
 export async function saveCache({
