@@ -119557,8 +119557,8 @@ async function findArtifact(Octokit, name, workflowRunId) {
         artifact_id: artifact.id,
         archive_format: 'zip',
     });
-    core_1.debug(JSON.stringify(Buffer.from(download.data).toString('utf-8'), null, 2));
-    const result = zlib_1.unzipSync(download.data);
+    // debug(JSON.stringify(Buffer.from(download.data as any).toString('utf-8'), null, 2));
+    const result = zlib_1.gunzipSync(download.data);
     return result.toString('utf-8');
 }
 exports.findArtifact = findArtifact;
