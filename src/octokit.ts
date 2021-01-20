@@ -64,7 +64,7 @@ export async function findArtifact(
   });
   debug(JSON.stringify(Buffer.from(download.data as any).toString('utf-8'), null, 2));
 
-  const result = unzipSync(Buffer.from(download.data as any));
+  const result = unzipSync(download.data as any);
 
   return result.toString('utf-8');
 }
