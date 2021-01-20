@@ -1,46 +1,72 @@
-import { debug, endGroup, getInput, setFailed, startGroup } from '@actions/core';
-import { context } from '@actions/github';
+import { promises as fsp } from 'fs';
+
+import { create } from '@actions/artifact';
+import { endGroup, getInput, setFailed, startGroup } from '@actions/core';
+const { writeFile, readFile } = fsp;
 
 import { build } from './build';
 import { postComment, readCache, saveCache } from './octokit';
 import { sizesComparisonToMarkdownRows, speedComparisonToMarkdownRows } from './size-formatter';
 import { runSpeedtest } from './speed';
+import type { CacheItem } from './types';
 import { execAsync } from './utils';
 
+// eslint-disable-next-line require-await
 async function run() {
-  const prNumber =
-    context.payload.pull_request?.number ??
-    (context.payload.issue?.html_url?.includes('/pull/') ? context.issue.number : undefined);
-
-  if (!prNumber) {
-    return setFailed('Not a PR!');
-  }
-
   const prDirectory = getInput('pr_directory_name');
   const baseDirectory = getInput('base_directory_name');
-  debug(`__dirname: ${__dirname}`);
-  debug(`process.cwd(): ${process.cwd()}`);
-  debug(`pwd: ${await execAsync(`pwd`)}`);
+  const prNumber = getInput('pr_number');
 
-  const results = await getResults({ prDirectory, baseDirectory });
+  if (!prNumber || !(prDirectory && baseDirectory)) {
+    return setFailed('Either `prNumber` or `prDirectory` and `baseDirectory` must be provided.');
+  }
 
-  const buildComparisonRows = sizesComparisonToMarkdownRows({
-    prOutput: results.prCache.size,
-    baseOutput: results.baseCache.size,
-  });
-
-  const speedComparisonRows = speedComparisonToMarkdownRows({
-    prOutput: results.prCache.speed,
-    baseOutput: results.baseCache.speed,
-  });
-
-  await postComment({ buildComparisonRows, speedComparisonRows, prNumber });
+  if (prNumber) {
+    return workflowRun(Number(prNumber));
+  } else {
+    return prRun({ prDirectory, baseDirectory });
+  }
 }
 
 run().catch((err) => {
   console.error(err);
   setFailed(err);
 });
+
+async function workflowRun(prNumber: number) {
+  const artifactClient = create();
+  await artifactClient.downloadArtifact('bundle-size-speed-results', './results.json');
+  const json = await readFile('./results.json', 'utf-8');
+  const results = JSON.parse(json) as {
+    readonly prCache: CacheItem;
+    readonly baseCache: CacheItem;
+  };
+
+  const buildComparisonRows = sizesComparisonToMarkdownRows({
+    prOutput: results.prCache.size,
+    baseOutput: results.baseCache.size,
+  });
+  const speedComparisonRows = speedComparisonToMarkdownRows({
+    prOutput: results.prCache.speed,
+    baseOutput: results.baseCache.speed,
+  });
+  await postComment({ buildComparisonRows, speedComparisonRows, prNumber });
+}
+
+async function prRun({
+  prDirectory,
+  baseDirectory,
+}: {
+  readonly prDirectory: string;
+  readonly baseDirectory: string;
+}) {
+  const results = await getResults({ prDirectory, baseDirectory });
+  const json = JSON.stringify(results);
+
+  const artifactClient = create();
+  await writeFile('./results.json', json, 'utf-8');
+  await artifactClient.uploadArtifact('bundle-size-speed-results', ['results.json'], './');
+}
 
 async function getResults({
   prDirectory,
