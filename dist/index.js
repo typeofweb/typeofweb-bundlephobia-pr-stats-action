@@ -119416,7 +119416,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const fs_1 = __nccwpck_require__(35747);
 const artifact_1 = __nccwpck_require__(52605);
 const core_1 = __nccwpck_require__(42186);
-const { writeFile, readFile } = fs_1.promises;
+const { writeFile } = fs_1.promises;
 const build_1 = __nccwpck_require__(46793);
 const octokit_1 = __nccwpck_require__(6161);
 const size_formatter_1 = __nccwpck_require__(73713);
@@ -119442,9 +119442,14 @@ run().catch((err) => {
     core_1.setFailed(err);
 });
 async function workflowRun(prNumber) {
-    const artifactClient = artifact_1.create();
-    await artifactClient.downloadArtifact('bundle-size-speed-results', './results.json');
-    const json = await readFile('./results.json', 'utf-8');
+    const Octokit = octokit_1.getOctokit();
+    if (!Octokit) {
+        return core_1.setFailed('Missing GITHUB_TOKEN!');
+    }
+    const json = await octokit_1.findArtifact(Octokit, 'bundle-size-speed-results');
+    if (!json) {
+        return core_1.setFailed('Missing artifact!');
+    }
     const results = JSON.parse(json);
     const buildComparisonRows = size_formatter_1.sizesComparisonToMarkdownRows({
         prOutput: results.prCache.size,
@@ -119508,8 +119513,9 @@ async function getResults({ prDirectory, baseDirectory, }) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postComment = exports.readCache = exports.saveCache = exports.findExistingComment = exports.getOctokit = void 0;
+exports.postComment = exports.readCache = exports.saveCache = exports.findArtifact = exports.findExistingComment = exports.getOctokit = void 0;
 const fs_1 = __nccwpck_require__(35747);
+const zlib_1 = __nccwpck_require__(78761);
 const { readFile, writeFile, unlink } = fs_1.promises;
 const cache_1 = __nccwpck_require__(27799);
 const core_1 = __nccwpck_require__(42186);
@@ -119532,6 +119538,26 @@ async function findExistingComment(Octokit, Context, prNumber) {
     return comments.find((comment) => { var _a; return (_a = comment.body) === null || _a === void 0 ? void 0 : _a.includes(size_formatter_1.HEADER); });
 }
 exports.findExistingComment = findExistingComment;
+async function findArtifact(Octokit, name) {
+    const list = await Octokit.actions.listWorkflowRunArtifacts({
+        owner: github_1.context.repo.owner,
+        repo: github_1.context.repo.repo,
+        run_id: github_1.context.runId,
+    });
+    const artifact = list.data.artifacts.find((artifact) => artifact.name === name);
+    if (!artifact) {
+        return;
+    }
+    const download = await Octokit.actions.downloadArtifact({
+        owner: github_1.context.repo.owner,
+        repo: github_1.context.repo.repo,
+        artifact_id: artifact.id,
+        archive_format: 'zip',
+    });
+    const result = zlib_1.unzipSync(Buffer.from(download.data));
+    return result.toString('utf-8');
+}
+exports.findArtifact = findArtifact;
 async function saveCache({ content, commit, }) {
     const key = CACHE_KEY_PREFIX + commit;
     await writeFile(key, JSON.stringify(content), { encoding: 'utf8' });
