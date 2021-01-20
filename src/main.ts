@@ -2,10 +2,10 @@ import { promises as fsp } from 'fs';
 
 import { create } from '@actions/artifact';
 import { endGroup, getInput, setFailed, startGroup } from '@actions/core';
-const { writeFile, readFile } = fsp;
+const { writeFile } = fsp;
 
 import { build } from './build';
-import { postComment, readCache, saveCache } from './octokit';
+import { findArtifact, getOctokit, postComment, readCache, saveCache } from './octokit';
 import { sizesComparisonToMarkdownRows, speedComparisonToMarkdownRows } from './size-formatter';
 import { runSpeedtest } from './speed';
 import type { CacheItem } from './types';
@@ -34,9 +34,16 @@ run().catch((err) => {
 });
 
 async function workflowRun(prNumber: number) {
-  const artifactClient = create();
-  await artifactClient.downloadArtifact('bundle-size-speed-results', './results.json');
-  const json = await readFile('./results.json', 'utf-8');
+  const Octokit = getOctokit();
+  if (!Octokit) {
+    return setFailed('Missing GITHUB_TOKEN!');
+  }
+
+  const json = await findArtifact(Octokit, 'bundle-size-speed-results');
+  if (!json) {
+    return setFailed('Missing artifact!');
+  }
+
   const results = JSON.parse(json) as {
     readonly prCache: CacheItem;
     readonly baseCache: CacheItem;

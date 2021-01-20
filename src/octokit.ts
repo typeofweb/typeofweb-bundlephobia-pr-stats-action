@@ -1,4 +1,5 @@
 import { promises as fsp } from 'fs';
+import { unzipSync } from 'zlib';
 
 const { readFile, writeFile, unlink } = fsp;
 
@@ -35,6 +36,29 @@ export async function findExistingComment(
     issue_number: prNumber,
   });
   return comments.find((comment) => comment.body?.includes(HEADER));
+}
+
+export async function findArtifact(Octokit: ReturnType<typeof githubGetOctokit>, name: string) {
+  const list = await Octokit.actions.listWorkflowRunArtifacts({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    run_id: context.runId,
+  });
+  const artifact = list.data.artifacts.find((artifact) => artifact.name === name);
+  if (!artifact) {
+    return;
+  }
+
+  const download = await Octokit.actions.downloadArtifact({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    artifact_id: artifact.id,
+    archive_format: 'zip',
+  });
+
+  const result = unzipSync(Buffer.from(download.data as any));
+
+  return result.toString('utf-8');
 }
 
 export async function saveCache({
