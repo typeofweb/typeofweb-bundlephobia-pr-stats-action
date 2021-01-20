@@ -38,12 +38,15 @@ export async function findExistingComment(
   return comments.find((comment) => comment.body?.includes(HEADER));
 }
 
-export async function findArtifact(Octokit: ReturnType<typeof githubGetOctokit>, name: string) {
-  debug(`runId: ${context.runId}`);
+export async function findArtifact(
+  Octokit: ReturnType<typeof githubGetOctokit>,
+  name: string,
+  workflowRunId: number,
+) {
   const list = await Octokit.actions.listWorkflowRunArtifacts({
     owner: context.repo.owner,
     repo: context.repo.repo,
-    run_id: context.runId,
+    run_id: workflowRunId,
   });
   debug(JSON.stringify(list, null, 2));
 

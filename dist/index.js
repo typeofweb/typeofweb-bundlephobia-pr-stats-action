@@ -119427,11 +119427,12 @@ async function run() {
     const prDirectory = core_1.getInput('pr_directory_name');
     const baseDirectory = core_1.getInput('base_directory_name');
     const prNumber = core_1.getInput('pr_number');
-    if (!prNumber && !(prDirectory && baseDirectory)) {
-        return core_1.setFailed('Either `prNumber` or `prDirectory` and `baseDirectory` must be provided.');
+    const workflowRunId = core_1.getInput('workflow_run_id');
+    if (!(prNumber && workflowRunId) && !(prDirectory && baseDirectory)) {
+        return core_1.setFailed('Either `prNumber` and `workflowRunId` or `prDirectory` and `baseDirectory` must be provided.');
     }
     if (prNumber) {
-        return workflowRun(Number(prNumber));
+        return workflowRun(Number(prNumber), Number(workflowRunId));
     }
     else {
         return prRun({ prDirectory, baseDirectory });
@@ -119441,12 +119442,12 @@ run().catch((err) => {
     console.error(err);
     core_1.setFailed(err);
 });
-async function workflowRun(prNumber) {
+async function workflowRun(prNumber, workflowRunId) {
     const Octokit = octokit_1.getOctokit();
     if (!Octokit) {
         return core_1.setFailed('Missing GITHUB_TOKEN!');
     }
-    const json = await octokit_1.findArtifact(Octokit, 'bundle-size-speed-results');
+    const json = await octokit_1.findArtifact(Octokit, 'bundle-size-speed-results', workflowRunId);
     if (!json) {
         return core_1.setFailed('Missing artifact!');
     }
@@ -119538,12 +119539,11 @@ async function findExistingComment(Octokit, Context, prNumber) {
     return comments.find((comment) => { var _a; return (_a = comment.body) === null || _a === void 0 ? void 0 : _a.includes(size_formatter_1.HEADER); });
 }
 exports.findExistingComment = findExistingComment;
-async function findArtifact(Octokit, name) {
-    core_1.debug(`runId: ${github_1.context.runId}`);
+async function findArtifact(Octokit, name, workflowRunId) {
     const list = await Octokit.actions.listWorkflowRunArtifacts({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
-        run_id: github_1.context.runId,
+        run_id: workflowRunId,
     });
     core_1.debug(JSON.stringify(list, null, 2));
     const artifact = list.data.artifacts.find((artifact) => artifact.name === name);
