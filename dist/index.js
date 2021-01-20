@@ -119539,11 +119539,13 @@ async function findExistingComment(Octokit, Context, prNumber) {
 }
 exports.findExistingComment = findExistingComment;
 async function findArtifact(Octokit, name) {
+    core_1.debug(`runId: ${github_1.context.runId}`);
     const list = await Octokit.actions.listWorkflowRunArtifacts({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         run_id: github_1.context.runId,
     });
+    core_1.debug(JSON.stringify(list, null, 2));
     const artifact = list.data.artifacts.find((artifact) => artifact.name === name);
     if (!artifact) {
         return;
