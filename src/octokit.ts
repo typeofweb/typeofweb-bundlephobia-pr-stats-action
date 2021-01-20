@@ -62,7 +62,7 @@ export async function findArtifact(
     artifact_id: artifact.id,
     archive_format: 'zip',
   });
-  // debug(JSON.stringify(Buffer.from(download.data as any).toString('utf-8'), null, 2));
+  debug(JSON.stringify(Buffer.from(download.data as any).toString('base64'), null, 2));
 
   const result = gunzipSync(download.data as any);
 
