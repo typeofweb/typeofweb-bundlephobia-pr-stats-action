@@ -17,7 +17,7 @@ async function run() {
   const baseDirectory = getInput('base_directory_name');
   const prNumber = getInput('pr_number');
 
-  if (!prNumber || !(prDirectory && baseDirectory)) {
+  if (!prNumber && !(prDirectory && baseDirectory)) {
     return setFailed('Either `prNumber` or `prDirectory` and `baseDirectory` must be provided.');
   }
 
