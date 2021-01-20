@@ -1,5 +1,5 @@
 import { promises as fsp } from 'fs';
-import { unzipSync } from 'zlib';
+import { gunzipSync } from 'zlib';
 
 const { readFile, writeFile, unlink } = fsp;
 
@@ -62,9 +62,9 @@ export async function findArtifact(
     artifact_id: artifact.id,
     archive_format: 'zip',
   });
-  debug(JSON.stringify(Buffer.from(download.data as any).toString('utf-8'), null, 2));
+  // debug(JSON.stringify(Buffer.from(download.data as any).toString('utf-8'), null, 2));
 
-  const result = unzipSync(download.data as any);
+  const result = gunzipSync(download.data as any);
 
   return result.toString('utf-8');
 }
