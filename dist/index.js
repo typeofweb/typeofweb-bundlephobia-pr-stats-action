@@ -119550,12 +119550,14 @@ async function findArtifact(Octokit, name, workflowRunId) {
     if (!artifact) {
         return;
     }
+    core_1.debug(JSON.stringify(artifact, null, 2));
     const download = await Octokit.actions.downloadArtifact({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         artifact_id: artifact.id,
         archive_format: 'zip',
     });
+    core_1.debug(JSON.stringify(download.data, null, 2));
     const result = zlib_1.unzipSync(Buffer.from(download.data));
     return result.toString('utf-8');
 }
