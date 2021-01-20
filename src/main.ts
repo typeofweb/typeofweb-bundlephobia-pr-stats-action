@@ -16,13 +16,16 @@ async function run() {
   const prDirectory = getInput('pr_directory_name');
   const baseDirectory = getInput('base_directory_name');
   const prNumber = getInput('pr_number');
+  const workflowRunId = getInput('workflow_run_id');
 
-  if (!prNumber && !(prDirectory && baseDirectory)) {
-    return setFailed('Either `prNumber` or `prDirectory` and `baseDirectory` must be provided.');
+  if (!(prNumber && workflowRunId) && !(prDirectory && baseDirectory)) {
+    return setFailed(
+      'Either `prNumber` and `workflowRunId` or `prDirectory` and `baseDirectory` must be provided.',
+    );
   }
 
   if (prNumber) {
-    return workflowRun(Number(prNumber));
+    return workflowRun(Number(prNumber), Number(workflowRunId));
   } else {
     return prRun({ prDirectory, baseDirectory });
   }
@@ -33,13 +36,13 @@ run().catch((err) => {
   setFailed(err);
 });
 
-async function workflowRun(prNumber: number) {
+async function workflowRun(prNumber: number, workflowRunId: number) {
   const Octokit = getOctokit();
   if (!Octokit) {
     return setFailed('Missing GITHUB_TOKEN!');
   }
 
-  const json = await findArtifact(Octokit, 'bundle-size-speed-results');
+  const json = await findArtifact(Octokit, 'bundle-size-speed-results', workflowRunId);
   if (!json) {
     return setFailed('Missing artifact!');
   }

@@ -10,6 +10,9 @@ inputs:
   pr_number:
     description: 'Number of PR for the workflow run'
     required: false
+  workflow_run_id:
+    description: 'Number of workflow run'
+    required: false
 
 runs:
   using: 'node12'
