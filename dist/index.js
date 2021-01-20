@@ -119427,7 +119427,7 @@ async function run() {
     const prDirectory = core_1.getInput('pr_directory_name');
     const baseDirectory = core_1.getInput('base_directory_name');
     const prNumber = core_1.getInput('pr_number');
-    if (!prNumber || !(prDirectory && baseDirectory)) {
+    if (!prNumber && !(prDirectory && baseDirectory)) {
         return core_1.setFailed('Either `prNumber` or `prDirectory` and `baseDirectory` must be provided.');
     }
     if (prNumber) {
