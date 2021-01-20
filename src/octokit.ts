@@ -54,6 +54,7 @@ export async function findArtifact(
   if (!artifact) {
     return;
   }
+  debug(JSON.stringify(artifact, null, 2));
 
   const download = await Octokit.actions.downloadArtifact({
     owner: context.repo.owner,
@@ -61,6 +62,7 @@ export async function findArtifact(
     artifact_id: artifact.id,
     archive_format: 'zip',
   });
+  debug(JSON.stringify(download.data, null, 2));
 
   const result = unzipSync(Buffer.from(download.data as any));
 
