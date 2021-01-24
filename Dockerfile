@@ -1,4 +1,4 @@
-FROM node:14-slim
+FROM node:14
 
 LABEL name="typeofweb-bundlephobia-pr-stats-action"
 LABEL maintainer="Michal Miszczyszyn <michal@mmiszy.pl>"
