@@ -1,0 +1,25 @@
+name: 'Type of Web Bundlephobia PR stats'
+description: 'Compare bundle size for Pull Requests'
+inputs:
+  pr_directory_name:
+    description: 'Directory against which the build will be based'
+    required: false
+  base_directory_name:
+    description: 'Base directory branch'
+    required: false
+  pr_number:
+    description: 'Number of PR for the workflow run'
+    required: false
+  workflow_run_id:
+    description: 'Number of workflow run'
+    required: false
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  # using: 'node12'
+  # main: 'dist/index.js'
+
+branding:
+  color: green
+  icon: 'bar-chart-2'
