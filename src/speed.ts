@@ -97,12 +97,12 @@ const cases = [
     [prDirectory, baseDirectory].forEach((path) => {
       const typeofwebSchema = require(join(cwd, path)) as typeof tofw;
       const schema = typeofwebSchema.object({
-        name: typeofwebSchema.minLength(4)(typeofwebSchema.string()),
+        name: typeofwebSchema.minStringLength(4)(typeofwebSchema.string()),
         email: typeofwebSchema.string(),
-        firstName: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
-        phone: typeofwebSchema.nonEmpty(typeofwebSchema.string()),
+        firstName: typeofwebSchema.minStringLength(0)(typeofwebSchema.string()),
+        phone: typeofwebSchema.minStringLength(0)(typeofwebSchema.string()),
         age: typeofwebSchema.number(),
-      });
+      })();
       const validator = typeofwebSchema.validate(schema);
       if (path === baseDirectory) {
         bench.ref(`@typeofweb/schema@${path}`, () => {
